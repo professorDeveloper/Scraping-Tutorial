@@ -1,3 +1,18 @@
+
+### Setup
+
+In build.gradle repositories:
+
+```groovy
+maven { url 'https://jitpack.io' }
+```
+
+In app/build.gradle dependencies:
+
+```groovy
+implementation 'com.github.Blatzar:NiceHttp:+'
+```
+
 ### Scraping a document with Nice Http
 
 ```kotlin
