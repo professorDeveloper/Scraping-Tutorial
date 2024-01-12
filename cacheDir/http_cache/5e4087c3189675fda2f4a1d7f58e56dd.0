@@ -1,0 +1,15 @@
+http://uzmovi.com/
+GET
+0
+HTTP/1.1 200 OK
+10
+Date: Fri, 12 Jan 2024 19:38:54 GMT
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Set-Cookie: ci_session=623bnsni5nur33hthd4d3ue3ec6kj1dm; expires=Fri, 12-Jan-2024 20:38:54 GMT; Max-Age=3600; path=/; HttpOnly
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Content-Encoding: gzip
+Cache-Control: max-stale=2147483647, only-if-cached
+OkHttp-Sent-Millis: 1705088336650
+OkHttp-Received-Millis: 1705088336791
