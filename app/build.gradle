@@ -43,5 +43,5 @@ dependencies {
     implementation "org.jsoup:jsoup:1.15.1"
     implementation 'com.github.Blatzar:NiceHttp:0.4.4'
     api "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
-
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
