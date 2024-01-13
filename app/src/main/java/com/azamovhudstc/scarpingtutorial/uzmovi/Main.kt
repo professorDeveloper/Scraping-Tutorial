@@ -7,10 +7,9 @@ import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 private val mainUrl = "http://uzmovi.com/"
 
  fun main() {
-    val list = searchMovie("Hayot Mamot o`yinlari 5")
+    val list = searchMovie("Yigit So`zi")
     animeDetails(list.get(0)) /// Add Trailer Scarping
 }
-
 
  fun animeDetails(parsedMovie: ParsedMovie) {
     println(parsedMovie.href)
