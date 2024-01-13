@@ -4,8 +4,12 @@ import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
 import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.lagradost.nicehttp.Requests
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import org.jsoup.Jsoup
 
 
 private val mainUrl = "https://aniworld.to"
@@ -17,9 +21,24 @@ suspend fun main(args: Array<String>) {
     setLink(epData.link)
     val epFullData = setLink(epData.link)
 
-    println("Hoster: ${epFullData.host}")
-    println("Hoster URL: ${epFullData.hostUrl}")
-    println("Hoster Name: ${epFullData.hostName}")
+    val redirectLink = getAnimeRedirectLink(epFullData.hostUrl)
+
+    val regex = Regex("/([^/]+)\$") // Matches the last part after the slash
+    val matchResult = regex.find(redirectLink)
+    val extractedPart = matchResult?.groups?.get(1)?.value
+
+    val videoLink = "https://bradleyviewdoctor.com/e/${extractedPart}"
+
+    println(videoLink)
+
+}
+
+suspend fun getAnimeRedirectLink(redirectLink: String): String {
+    val document = getJsoup("$mainUrl/$redirectLink")
+    val ogUrlMetaTag = document.selectFirst("meta[name=og:url]")
+    val ogUrlContent = ogUrlMetaTag?.attr("content")//.let { println(it) }
+    println(ogUrlContent!!)
+    return ogUrlContent
 
 }
 
@@ -36,6 +55,17 @@ suspend fun animeDetails(parsedData: AniworldSearchDataItem): ArrayList<EpisodeD
     }
     return epList
 }
+
+fun fetchHtmlAsync(url: String) = runBlocking {
+    return@runBlocking async(Dispatchers.IO) {
+        return@async try {
+            Jsoup.connect(url).get()
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
 
 suspend fun setLink(url: String): EpisodeFullData {
     var episodeFullData = EpisodeFullData("", "", "")
