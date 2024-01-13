@@ -12,11 +12,10 @@ import okhttp3.RequestBody
 import org.jsoup.Jsoup
 
 
-private val mainUrl = "https://aniworld.to"
+private const val mainUrl = "https://aniworld.to"
 
 suspend fun main(args: Array<String>) {
-
-    val data = searchAnimeInAniWord("One Note")
+    val data = searchAnimeInAniWord("Spirited Away")
     val epData = animeDetails(data.get(0)).get(0)
     setLink(epData.link)
     val epFullData = setLink(epData.link)
@@ -56,15 +55,7 @@ suspend fun animeDetails(parsedData: AniworldSearchDataItem): ArrayList<EpisodeD
     return epList
 }
 
-fun fetchHtmlAsync(url: String) = runBlocking {
-    return@runBlocking async(Dispatchers.IO) {
-        return@async try {
-            Jsoup.connect(url).get()
-        } catch (e: Exception) {
-            null
-        }
-    }
-}
+
 
 
 suspend fun setLink(url: String): EpisodeFullData {
