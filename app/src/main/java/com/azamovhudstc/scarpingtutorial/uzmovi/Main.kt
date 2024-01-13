@@ -5,15 +5,14 @@ import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 
 private val mainUrl = "http://uzmovi.com/"
-val regex = """new\sPlayerjs\(*\s*id:"(.*?)",\s*file:"(.*?)",\s*poster:"(.*?)".*}\);""".toRegex()
 
-suspend fun main() {
+ fun main() {
     val list = searchMovie("Hayot Mamot o`yinlari 5")
     animeDetails(list.get(0)) /// Add Trailer Scarping
 }
 
 
-suspend fun animeDetails(parsedMovie: ParsedMovie) {
+ fun animeDetails(parsedMovie: ParsedMovie) {
     println(parsedMovie.href)
     val doc = getJsoup(parsedMovie.href)
     val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()
@@ -39,7 +38,9 @@ suspend fun animeDetails(parsedMovie: ParsedMovie) {
 
 }
 
-suspend fun searchMovie(query: String): ArrayList<ParsedMovie> {
+
+
+ fun searchMovie(query: String): ArrayList<ParsedMovie> {
     val list = arrayListOf<ParsedMovie>()
     val searchUrl = "$mainUrl/search?q=$query"
     val doc = Utils.getJsoup(searchUrl) //REQUEST SEARCH
