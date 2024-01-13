@@ -15,30 +15,48 @@ import org.jsoup.Jsoup
 private const val mainUrl = "https://aniworld.to"
 
 suspend fun main(args: Array<String>) {
-    val data = searchAnimeInAniWord("Spirited Away")
+    val data = searchAnimeInAniWord("One Piece")
     val epData = animeDetails(data.get(0)).get(0)
+    println(
+        epData.link
+    )
     setLink(epData.link)
     val epFullData = setLink(epData.link)
 
+    println("$mainUrl${epFullData.hostUrl}")
     val redirectLink = getAnimeRedirectLink(epFullData.hostUrl)
 
     val regex = Regex("/([^/]+)\$") // Matches the last part after the slash
-    val matchResult = regex.find(redirectLink)
-    val extractedPart = matchResult?.groups?.get(1)?.value
+//    val matchResult = regex.find(redirectLink)
+//    val extractedPart = matchResult?.groups?.get(1)?.value
+//    val videoLink = "https://bradleyviewdoctor.com/e/${extractedPart}"
 
-    val videoLink = "https://bradleyviewdoctor.com/e/${extractedPart}"
-
-    println(videoLink)
 
 }
 
-suspend fun getAnimeRedirectLink(redirectLink: String): String {
+suspend fun getAnimeRedirectLink(redirectLink: String) {
     val document = getJsoup("$mainUrl/$redirectLink")
-    val ogUrlMetaTag = document.selectFirst("meta[name=og:url]")
-    val ogUrlContent = ogUrlMetaTag?.attr("content")//.let { println(it) }
-    println(ogUrlContent!!)
-    return ogUrlContent
+    val scriptTags = document.select("script")
 
+    for (scriptTag in scriptTags) {
+        val scriptCode = scriptTag.html()
+        if (scriptCode.contains("var sources")) {
+            // sources obyektini topsangiz, uni Kotlin obyektiga o'tkazish mumkin
+            val hlsUrl = extractValue(scriptCode, "'hls': '(.*?)'")
+            val videoHeight = extractValue(scriptCode, "'video_height': (\\d+)")
+
+            // Natijalarni chiqaring
+            println("HLS URL: $hlsUrl")
+            println("Video Height: $videoHeight")
+        }
+    }
+
+
+}
+
+fun extractValue(input: String, regex: String): String {
+    val matchResult = Regex(regex).find(input)
+    return matchResult?.groupValues?.get(1) ?: ""
 }
 
 
