@@ -15,7 +15,7 @@ import org.jsoup.Jsoup
 private const val mainUrl = "https://aniworld.to"
 
 suspend fun main(args: Array<String>) {
-    val data = searchAnimeInAniWord("One Piece")
+    val data = searchAnimeInAniWord("Spirited Away")
     val epData = animeDetails(data.get(0)).get(0)
     println(
         epData.link
