@@ -1,13 +1,42 @@
 package com.azamovhudstc.scarpingtutorial.uzmovi
 
 import com.azamovhudstc.scarpingtutorial.utils.Utils
+import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 
 private val mainUrl = "http://uzmovi.com/"
+val regex = """new\sPlayerjs\(*\s*id:"(.*?)",\s*file:"(.*?)",\s*poster:"(.*?)".*}\);""".toRegex()
 
 suspend fun main() {
-    val list = searchMovie("Sening Isming")
-    println(list.toString())
+    val list = searchMovie("Hayot Mamot o`yinlari 5")
+    animeDetails(list.get(0)) /// Add Trailer Scarping
+}
+
+
+suspend fun animeDetails(parsedMovie: ParsedMovie) {
+    println(parsedMovie.href)
+    val doc = getJsoup(parsedMovie.href)
+    val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()
+
+    if (tabPaneElement!!.id().equals("online1")) {
+        val totalEpisodeList = doc.getElementById("online1")!!.select("a.BatcoH.BatcoH-5")
+        for (episode in totalEpisodeList) {
+            val episodeLinks = episode.select("a.BatcoH.BatcoH-5")
+            println(episode.text())
+            println(episodeLinks.attr("href"))
+        }
+    } else {
+        val totalEpisodeList =
+            doc.getElementById("full-video")!!.getElementsByTag("script").select("script").get(0)
+        val regex = """file:"([^"]+)",\s*poster:"([^"]+)".*""".toRegex()
+        val matchResult = regex.find(totalEpisodeList.data())
+        val (file, poster) = matchResult!!.destructured
+        println(file)
+        println(poster)
+
+    }
+
+
 }
 
 suspend fun searchMovie(query: String): ArrayList<ParsedMovie> {
