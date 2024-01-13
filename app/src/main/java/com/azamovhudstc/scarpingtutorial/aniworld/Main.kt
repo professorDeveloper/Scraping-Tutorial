@@ -16,7 +16,7 @@ private val mainUrl = "https://aniworld.to"
 
 suspend fun main(args: Array<String>) {
 
-    val data = searchAnimeInAniWord("Death Note")
+    val data = searchAnimeInAniWord("One Note")
     val epData = animeDetails(data.get(0)).get(0)
     setLink(epData.link)
     val epFullData = setLink(epData.link)
