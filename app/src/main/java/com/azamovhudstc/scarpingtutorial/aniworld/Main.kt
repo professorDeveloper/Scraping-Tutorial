@@ -15,7 +15,7 @@ import org.jsoup.Jsoup
 private const val mainUrl = "https://aniworld.to"
 
 suspend fun main(args: Array<String>) {
-    val data = searchAnimeInAniWord("Spirited Away")
+    val data = searchAnimeInAniWord("One Piece")
     val epData = animeDetails(data.get(0)).get(0)
     println(
         epData.link
@@ -79,13 +79,13 @@ suspend fun animeDetails(parsedData: AniworldSearchDataItem): ArrayList<EpisodeD
 suspend fun setLink(url: String): EpisodeFullData {
     var episodeFullData = EpisodeFullData("", "", "")
     val document = getJsoup("$mainUrl/$url")
+    val firstDataLinkId = document.select("li[data-link-id]").firstOrNull()?.attr("data-link-id")
     val hosterElements = document.getElementsByClass("watchEpisode")
     for (element in hosterElements) {
         val hoster = element.select("i").attr("title")
-        val hosterUrl = element.attr("href")
         val hosterName = element.select("h4").text()
         if (hosterName == "VOE") {
-            episodeFullData = EpisodeFullData(hosterName, hosterUrl, hoster)
+            episodeFullData = EpisodeFullData(hosterName, "/redirect/${firstDataLinkId.toString()}", hoster)
         }
     }
 
