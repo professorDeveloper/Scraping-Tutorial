@@ -7,7 +7,7 @@ import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 private val mainUrl = "http://uzmovi.com/"
 
  fun main() {
-    val list = searchMovie("Yigit So`zi")
+    val list = searchMovie("Sening Isming")
     animeDetails(list.get(0)) /// Add Trailer Scarping
 }
 

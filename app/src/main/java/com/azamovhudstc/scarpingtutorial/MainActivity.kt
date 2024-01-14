@@ -67,6 +67,8 @@ suspend fun returnEpMap(parseData: AnimeParseData): Map<String, Map<String, Stri
     val epMapSub =
         (1..subsEpCount.toInt()).associate { it.toString() to it.toString() } /// generate map from 1 to epCount
 
+    println(epMapSub)
+
     val epMap = mutableMapOf("SUB" to epMapSub)
 
     return epMap
