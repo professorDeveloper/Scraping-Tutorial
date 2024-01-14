@@ -15,7 +15,7 @@ private val mainUrl = "http://uzmovi.com/"
     println(parsedMovie.href)
     val doc = getJsoup(parsedMovie.href)
     val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()
-
+     println(doc.body())
     if (tabPaneElement!!.id().equals("online1")) {
         val totalEpisodeList = doc.getElementById("online1")!!.select("a.BatcoH.BatcoH-5")
         for (episode in totalEpisodeList) {
