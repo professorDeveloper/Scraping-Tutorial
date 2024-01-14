@@ -10,7 +10,7 @@ maven { url 'https://jitpack.io' }
 In app/build.gradle dependencies:
 
 ```groovy
-implementation 'com.github.Blatzar:NiceHttp:+'
+implementation 'com.github.Blatzar:NiceHttp:0.4.4'
 ```
 
 ### Scraping a document with Nice Http
