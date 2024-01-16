@@ -41,7 +41,11 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     implementation "org.jsoup:jsoup:1.15.1"
-    implementation 'com.github.Blatzar:NiceHttp:0.4.4'
+    implementation 'com.github.Blatzar:NiceHttp:0.4.4'// So wee Need this Libraries
     api "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.squareup.okhttp3:okhttp:3.5.0'
+    implementation"io.ktor:ktor-websockets:1.6.7"
+
+    //and we need FireFox browser because this browser run away debug mode
 }

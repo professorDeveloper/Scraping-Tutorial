@@ -7,14 +7,14 @@ import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 private val mainUrl = "http://uzmovi.com/"
 
  fun main() {
-    val list = searchMovie("Sening Isming")
-    animeDetails(list.get(0)) /// Add Trailer Scarping
+    val list = searchMovie("")
+    movieDetails(list.get(0)) /// Add Trailer Scarping
 }
 
- fun animeDetails(parsedMovie: ParsedMovie) {
+ fun movieDetails(parsedMovie: ParsedMovie) {
     println(parsedMovie.href)
     val doc = getJsoup(parsedMovie.href)
-    val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()
+    val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()// This Code Supported CSS
      println(doc.body())
     if (tabPaneElement!!.id().equals("online1")) {
         val totalEpisodeList = doc.getElementById("online1")!!.select("a.BatcoH.BatcoH-5")
@@ -48,8 +48,7 @@ private val mainUrl = "http://uzmovi.com/"
     for (movie in movieContent) {
         val movieName = movie.getElementsByClass("short-link").text() //GET ANIME NAME
         val movieCover = movie.getElementsByTag("img").attr("data-src") // GET ANIME COVER
-        val movieHref =
-            movie.getElementsByClass("short-link").select("h4.short-link a").attr("href")
+        val movieHref = movie.getElementsByClass("short-link").select("h4.short-link a").attr("href")
 
         list.add(ParsedMovie(movieName, movieHref, movieCover))
     }
