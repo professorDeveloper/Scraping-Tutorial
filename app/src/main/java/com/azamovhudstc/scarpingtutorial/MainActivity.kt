@@ -2,6 +2,10 @@ package com.azamovhudstc.scarpingtutorial
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.azamovhudstc.scarpingtutorial.shared.LocalStorage
+import com.azamovhudstc.scarpingtutorial.shared.parseJson
+import com.azamovhudstc.scarpingtutorial.shared.saveGson
+import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.Utils.postJson
 import kotlinx.coroutines.async
@@ -9,10 +13,18 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val localStorage = LocalStorage(this)
         //Enjoy My Code
+
+        val list = arrayListOf("SUB", "DUB", "GET", "DUB")
+        localStorage.json = list.saveGson()
+        println(localStorage.token)
+        println(localStorage.json.parseJson().toString())
+
     }
 }
 
@@ -77,6 +89,7 @@ suspend fun returnEpMap(parseData: AnimeParseData): Map<String, Map<String, Stri
 
 suspend fun searchAnime(query: String): ArrayList<AnimeParseData> {
     val animeList = arrayListOf<AnimeParseData>()
+    var request = Utils.get("").parseJson()
     val url = "$mainUrl/discover/?q=$query" //GET SEARCH URL
     val doc = getJsoup(url) //REQUEST SEARCH
     val animeContent = doc.getElementsByClass("anime-meta") //GET ANIME LIST

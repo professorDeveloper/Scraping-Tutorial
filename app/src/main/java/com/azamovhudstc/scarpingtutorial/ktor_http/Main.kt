@@ -1,6 +1,5 @@
 package com.azamovhudstc.scarpingtutorial.ktor_http
 
-class Main {
+fun main(args: Array<String>) {
 
-    //Future Task
 }
