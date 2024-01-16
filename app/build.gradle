@@ -45,7 +45,8 @@ dependencies {
     api "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.squareup.okhttp3:okhttp:3.5.0'
-    implementation"io.ktor:ktor-websockets:1.6.7"
+    implementation 'org.java-websocket:Java-WebSocket:1.4.0'
+
 
     //and we need FireFox browser because this browser run away debug mode
 }
