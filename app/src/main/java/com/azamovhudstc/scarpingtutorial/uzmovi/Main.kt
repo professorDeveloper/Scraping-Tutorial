@@ -11,7 +11,7 @@ import org.jsoup.Jsoup
 private val mainUrl = "http://uzmovi.com/"
 
 fun main() {
-    val list = searchMovie("Sinbad")
+    val list = searchMovie("Sening Isming")
 
     for (movie in list) {
         println("-------------------------------")
@@ -45,6 +45,7 @@ suspend fun getM3u8LocationFile(mainUrl: String) {
         ), referer = "http://uzmovi.com/"
     )
     println(data.url)
+    println(data.body.string())
 }
 
 fun movieDetails(parsedMovie: ParsedMovie) {
@@ -66,6 +67,11 @@ fun movieDetails(parsedMovie: ParsedMovie) {
 
         println("File: $file")
         println("Title: $title")
+
+
+        runBlocking {
+            getM3u8LocationFile(file!!)
+        }
     }else{
         val episodeLinks = tabPaneElement!!.select("div#online1 center a")
         val epList = arrayListOf<String>()
