@@ -45,7 +45,6 @@ suspend fun getM3u8LocationFile(mainUrl: String) {
         ), referer = "http://uzmovi.com/"
     )
     println(data.url)
-    println(data.body.string())
 }
 
 fun movieDetails(parsedMovie: ParsedMovie) {
