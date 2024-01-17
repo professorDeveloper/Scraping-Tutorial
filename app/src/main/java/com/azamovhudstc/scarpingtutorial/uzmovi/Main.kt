@@ -6,11 +6,12 @@ import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
+import org.jsoup.Jsoup
 
 private val mainUrl = "http://uzmovi.com/"
 
 fun main() {
-    val list = searchMovie("Hayot mamot o`yinlari 5")
+    val list = searchMovie("Sinbad")
 
     for (movie in list) {
         println("-------------------------------")
@@ -19,18 +20,15 @@ fun main() {
         println("-------------------------------")
     }
     println("----------------SELECTED MOVIE ${list.get(0).title}---------------")
-    movieDetails(list.get(4)) /// Add Trailer Scarping
+    movieDetails(list.get(0)) /// Get Movie Details  Scarping
 
-    runBlocking {
-        getM3u8LocationFile()
-
-    }
+//    runBlocking {
+//        getM3u8LocationFile("")
+//    }
 }
 
 
-suspend fun getM3u8LocationFile() {
-    val mainUrl =
-        "http://uzmovi.com/play/e4y5z5x543r24484y2u2q254p204x2w2r2u223s2s2033344y544t4y4m4i4t4e4q234x5q5g2f4x5r4l4s5q5w5o4c2w576h2h4j4f582m5c4q2i4l403/"
+suspend fun getM3u8LocationFile(mainUrl: String) {
     val requests = Requests(Utils.httpClient, responseParser = parser)
 
     val data = requests.get(
@@ -53,25 +51,64 @@ fun movieDetails(parsedMovie: ParsedMovie) {
     println(parsedMovie.href)
     val doc = getJsoup(parsedMovie.href)
     val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()// This Code Supported CSS
-    if (tabPaneElement!!.id().equals("online1")) {
-        val totalEpisodeList = doc.getElementById("online1")!!.select("a.BatcoH.BatcoH-5")
-        for (episode in totalEpisodeList) {
-            val episodeLinks = episode.select("a.BatcoH.BatcoH-5")
-            println(episode.text())
-            println(episodeLinks.attr("href"))
+    if (tabPaneElement?.getElementById("online9") != null) {
+        val scriptContent = tabPaneElement?.select("script")!!.html()
+        val playerConfigStart = scriptContent.indexOf("var playerjsfilm_config = {")
+        val playerConfigEnd = scriptContent.indexOf("};", playerConfigStart) + 1
+        val playerConfig = scriptContent.substring(playerConfigStart, playerConfigEnd)
+
+        val fileMatch = Regex("""file:\s*"([^"]+)"""").find(playerConfig)
+        val titleMatch = Regex("""title:\s*"([^"]+)"""").find(playerConfig)
+
+        val file = fileMatch?.groupValues?.get(1)
+        val title = titleMatch?.groupValues?.get(1)
+
+
+        println("File: $file")
+        println("Title: $title")
+    }else{
+        val episodeLinks = tabPaneElement!!.select("div#online1 center a")
+        val epList = arrayListOf<String>()
+        // Displaying the parsed episode links
+        episodeLinks.forEachIndexed { index, link ->
+            val href = link.attr("href")
+            val text = link.text()
+            epList.add(href)
+            println("- $text: $href")
         }
-    } else {
-        val totalEpisodeList =
-            doc.getElementById("full-video")!!.getElementsByTag("script").select("script").get(0)
-        val regex = """file:"([^"]+)",\s*poster:"([^"]+)".*""".toRegex()
-        val matchResult = regex.find(totalEpisodeList.data())
-        val (file, poster) = matchResult!!.destructured
-        println(file)
-        println(poster)
+
+        setLink(epList.get(0))
 
     }
+}
 
+fun setLink(episodeLink: String) {
+    val doc = getJsoup(episodeLink)
+    val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()// This Code Supported CSS
+    val scriptContent = tabPaneElement!!.select("div#online1 script").html()
 
+    // Extracting the content of the playerjsserial_config variable
+    val playerConfigStart = scriptContent.indexOf("var playerjsserial_config = {")
+    val playerConfigEnd = scriptContent.indexOf("};", playerConfigStart) + 1
+    val playerConfig = scriptContent.substring(playerConfigStart, playerConfigEnd)
+
+    // Extracting file, title, and poster using regular expressions
+    val fileMatch = Regex("""file:\s*"([^"]+)""").find(playerConfig)
+    val titleMatch = Regex("""title:\s*"([^"]+)""").find(playerConfig)
+    val posterMatch = Regex("""poster:\s*"([^"]+)""").find(playerConfig)
+
+    val file = fileMatch?.groupValues?.get(1)
+    val title = titleMatch?.groupValues?.get(1)
+    val poster = posterMatch?.groupValues?.get(1)
+
+    println("File: $file")
+    println("Title: $title")
+    println("Poster: $poster")
+
+    runBlocking {
+        getM3u8LocationFile(file!!)
+
+    }
 }
 
 
