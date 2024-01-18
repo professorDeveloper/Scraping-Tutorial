@@ -2,6 +2,10 @@ package com.azamovhudstc.scarpingtutorial.tv_online
 
 import com.azamovhudstc.scarpingtutorial.tv_online.parsed.Movie
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
+import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
+import com.azamovhudstc.scarpingtutorial.utils.parser
+import com.lagradost.nicehttp.Requests
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 
 
@@ -15,6 +19,7 @@ fun main() {
 
 fun getTvFullDataByHref(href: String) {
     val doc = getJsoup(mainURL + href)
+    println(mainURL + href)
     val iframeElement = doc.select("iframe").first()
     val srcAttributeValue = iframeElement?.attr("src")
     val pattern = Regex("""file=([^&]+)""")
@@ -26,7 +31,13 @@ fun getTvFullDataByHref(href: String) {
         val fileParameterValue = matchResult?.groups?.get(1)?.value
 
         if (fileParameterValue != null) {
-            println("File parameter value: $fileParameterValue")
+            println(fileParameterValue)
+            val requests = Requests(baseClient = httpClient, responseParser = parser)
+            runBlocking {
+                val doc = requests.get(fileParameterValue)
+                println(doc.body.string())
+                //I think this Little bit hard code
+            }
         } else {
             println("File parameter not found.")
         }
