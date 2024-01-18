@@ -47,6 +47,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.5.0'
     implementation 'org.java-websocket:Java-WebSocket:1.4.0'
 
+    implementation "dev.datlag.jsunpacker:jsunpacker:1.0.1"
 
     //and we need FireFox browser because this browser run away debug mode
 }

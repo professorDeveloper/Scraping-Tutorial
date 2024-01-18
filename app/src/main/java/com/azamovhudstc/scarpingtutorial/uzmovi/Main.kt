@@ -6,21 +6,23 @@ import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
-import org.jsoup.Jsoup
 
 private val mainUrl = "http://uzmovi.com/"
 
+//sorry my english is not good
+//:joy
 fun main() {
-    val list = searchMovie("Sening Isming")
+    val list = searchMovie("Shelbilar Oilasi")
 
     for (movie in list) {
+        //this  loop is for testing
         println("-------------------------------")
         println(movie.title)
         println(movie.href)
         println("-------------------------------")
     }
     println("----------------SELECTED MOVIE ${list.get(0).title}---------------")
-    movieDetails(list.get(0)) /// Get Movie Details  Scarping
+    movieDetails(list.get(0)) /// Get Movie Details  Scarping by href
 
 //    runBlocking {
 //        getM3u8LocationFile("")
@@ -49,6 +51,7 @@ suspend fun getM3u8LocationFile(mainUrl: String) {
 
 fun movieDetails(parsedMovie: ParsedMovie) {
     println(parsedMovie.href)
+    //Scraping from uzmovi details
     val doc = getJsoup(parsedMovie.href)
     val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()// This Code Supported CSS
     if (tabPaneElement?.getElementById("online9") != null) {
@@ -60,18 +63,18 @@ fun movieDetails(parsedMovie: ParsedMovie) {
         val fileMatch = Regex("""file:\s*"([^"]+)"""").find(playerConfig)
         val titleMatch = Regex("""title:\s*"([^"]+)"""").find(playerConfig)
 
-        val file = fileMatch?.groupValues?.get(1)
-        val title = titleMatch?.groupValues?.get(1)
+        val file = fileMatch?.groupValues?.get(2)
+        val title = titleMatch?.groupValues?.get(2)
 
 
-        println("File: $file")
+        println("File: $file" + "index.m3u8")
         println("Title: $title")
 
 
         runBlocking {
             getM3u8LocationFile(file!!)
         }
-    }else{
+    } else {
         val episodeLinks = tabPaneElement!!.select("div#online1 center a")
         val epList = arrayListOf<String>()
         // Displaying the parsed episode links
@@ -87,6 +90,8 @@ fun movieDetails(parsedMovie: ParsedMovie) {
     }
 }
 
+//http://46.148.234.182/atsspxds/dy8yclFDMVpPMXFWcTJycVVZZlplM3Nkb0YzQUExMUdiRVFTcUkwMnprL28vbFlRWGVRM1I3T0tHZGhwVE0wcA_9pn_9pn/ZVpJNm5kcVRMMjIvUHpsbGtSVzU0YWx6Yi96VGN6bWg3WjF1dndwenhHSVVBRjNnKzNLVnQxb2hnSFB0RzVGQg_5uq_5uq/RGpoRys2NGNVTElzTlBYSVBjK2tTdz09/
+//So this url for Exoplayer if you do`nt know exo Player Just Search hls-player android :D
 fun setLink(episodeLink: String) {
     val doc = getJsoup(episodeLink)
     val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()// This Code Supported CSS
@@ -119,15 +124,18 @@ fun setLink(episodeLink: String) {
 
 fun searchMovie(query: String): ArrayList<ParsedMovie> {
     val list = arrayListOf<ParsedMovie>()
+    //this searchUrl is for search in uzmovi
+    //sample url : http://uzmovi.com/search?q=Sening+Isming
     val searchUrl = "$mainUrl/search?q=$query"
-    val doc = Utils.getJsoup(searchUrl) //REQUEST SEARCH
-    val movieContent = doc.getElementsByClass("shortstory-in categ")//GET ANIME LIST
+    val doc = getJsoup(searchUrl) //REQUEST SEARCH
+    val movieContent = doc.getElementsByClass("shortstory-in categ")//GET Movie LIST
 
     for (movie in movieContent) {
-        val movieName = movie.getElementsByClass("short-link").text() //GET ANIME NAME
-        val movieCover = movie.getElementsByTag("img").attr("data-src") // GET ANIME COVER
+        val movieName = movie.getElementsByClass("short-link").text() //GET Movie NAME
+        val movieCover = movie.getElementsByTag("img").attr("data-src") // GET Movie COVER
         val movieHref =
-            movie.getElementsByClass("short-link").select("h4.short-link a").attr("href")
+            movie.getElementsByClass("short-link").select("h4.short-link a")
+                .attr("href") //GET MOVIE DETAIL LINK
 
         list.add(ParsedMovie(movieName, movieHref, movieCover))
     }
