@@ -6,7 +6,7 @@ import com.talent.animescrap_common.model.AnimeDetails
 import org.jsoup.Jsoup
 
 private val mainUrl = "https://aniwave.to"
-private val url = "https://vidplay.site/"
+//private val url = "https://vidplay.site/"
 private val apiUrl = "https://9anime.eltik.net/"
 
 suspend fun main(args: Array<String>) {
