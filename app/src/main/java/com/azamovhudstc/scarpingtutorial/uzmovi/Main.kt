@@ -12,7 +12,7 @@ private val mainUrl = "http://uzmovi.com/"
 //sorry my english is not good
 //:joy
 fun main() {
-    val list = searchMovie("Shelbilar Oilasi")
+    val list = searchMovie("sakkiz-8-oyoq-osminog")
 
     for (movie in list) {
         //this  loop is for testing
