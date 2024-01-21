@@ -5,6 +5,7 @@ import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 import com.lagradost.nicehttp.Requests
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.runBlocking
 
 private val mainUrl = "http://uzmovi.com/"
@@ -12,7 +13,7 @@ private val mainUrl = "http://uzmovi.com/"
 //sorry my english is not good
 //:joy
 fun main() {
-    val list = searchMovie("sakkiz-8-oyoq-osminog")
+    val list = searchMovie("SAKKIZ 8 OYOQ OSMINOG O'YINI PREMYERA" )
 
     for (movie in list) {
         //this  loop is for testing
@@ -40,13 +41,10 @@ suspend fun getM3u8LocationFile(mainUrl: String) {
             "Connection" to "keep-alive",
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/237.84.2.178 Safari/537.36",
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Accept-Encoding" to "gzip, deflate",
-            "DNT" to "1",
-            "host" to "uzmovi.com",
-            "Accept-Language" to "ru-RU,ru;q=0.9,uz-UZ;q=0.8,uz;q=0.7,en-GB;q=0.6,en-US;q=0.5,en;q=0.4",
         ), referer = "http://uzmovi.com/"
     )
-    println(data.url)
+    println(data.headers.toMap())
+
 }
 
 fun movieDetails(parsedMovie: ParsedMovie) {
@@ -55,7 +53,8 @@ fun movieDetails(parsedMovie: ParsedMovie) {
     val doc = getJsoup(parsedMovie.href)
     val tabPaneElement = doc.select(".tab-pane.fade.in.active").first()// This Code Supported CSS
     if (tabPaneElement?.getElementById("online9") != null) {
-        val scriptContent = tabPaneElement?.select("script")!!.html()
+        println(tabPaneElement?.getElementById("online9"))
+        val scriptContent = tabPaneElement?.select("script")!!.first()!!.html()
         val playerConfigStart = scriptContent.indexOf("var playerjsfilm_config = {")
         val playerConfigEnd = scriptContent.indexOf("};", playerConfigStart) + 1
         val playerConfig = scriptContent.substring(playerConfigStart, playerConfigEnd)
@@ -63,11 +62,11 @@ fun movieDetails(parsedMovie: ParsedMovie) {
         val fileMatch = Regex("""file:\s*"([^"]+)"""").find(playerConfig)
         val titleMatch = Regex("""title:\s*"([^"]+)"""").find(playerConfig)
 
-        val file = fileMatch?.groupValues?.get(2)
-        val title = titleMatch?.groupValues?.get(2)
+        val file = fileMatch?.groupValues?.get(1)
+        val title = titleMatch?.groupValues?.get(1)
 
 
-        println("File: $file" + "index.m3u8")
+        println("File: $file" + "")
         println("Title: $title")
 
 
@@ -116,8 +115,19 @@ fun setLink(episodeLink: String) {
     println("Poster: $poster")
 
     runBlocking {
-        getM3u8LocationFile(file!!)
+        getM3u8LocationFile(convertToHttps(file!!))
 
+    }
+}
+
+fun convertToHttps(httpString: String): String {
+    // Check if the string starts with "http://"
+    if (httpString.startsWith("http://")) {
+        // Replace "http://" with "https://"
+        return "https://" + httpString.substring(7)
+    } else {
+        // If the string doesn't start with "http://", return it unchanged
+        return httpString
     }
 }
 
@@ -136,7 +146,6 @@ fun searchMovie(query: String): ArrayList<ParsedMovie> {
         val movieHref =
             movie.getElementsByClass("short-link").select("h4.short-link a")
                 .attr("href") //GET MOVIE DETAIL LINK
-
         list.add(ParsedMovie(movieName, movieHref, movieCover))
     }
 
