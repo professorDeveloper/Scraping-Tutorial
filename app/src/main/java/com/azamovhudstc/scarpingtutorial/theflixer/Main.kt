@@ -1,23 +1,66 @@
 package com.azamovhudstc.scarpingtutorial.theflixer
 
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
+import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
+import com.azamovhudstc.scarpingtutorial.utils.parser
+import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
+import org.jsoup.nodes.Element
 
 private const val mainUrl = "https://theflixertv.to"
 
 fun main(args: Array<String>) {
     runBlocking {
         val list = searchMovieByQuery("Wednesday")
-        val tvShow = getDetailFullMovie(list.get(0).watchUrl)
-        println(tvShow.dataId)
-        println(tvShow.posterUrl)
-        println(tvShow.bannerUrl)
+        val searchedMovie = list.get(0)
+        val tvShow = getDetailFullMovie(searchedMovie.watchUrl)
+        println("  Data ID: ${tvShow.dataId}")
+        println("  Title: ${tvShow.title}")
+        println("  Year: ${tvShow.year}")
+        println("  Type: ${tvShow.type}")
+        println("  Banner URL: ${tvShow.bannerUrl}")
+        println("  Rating Info: ${tvShow.ratingInfo}")
+        println("  Poster URL: ${tvShow.posterUrl}")
+        println("  Released: ${tvShow.released}")
+        println("  Genres: ${tvShow.genres.joinToString(", ")}")
+        println("  Casts: ${tvShow.casts.joinToString(", ")}")
+        println("  Duration: ${tvShow.duration}")
+        println("  Country: ${tvShow.country}")
+        println("  Production: ${tvShow.production}")
+        println()
+
+
         val map = getSeasonList(tvShow.dataId)
         val season1Episodes = getEpisodeBySeason(map.get(map.keys.first())!!)
-        println(season1Episodes.get(0).title)
-        println(season1Episodes.get(0).id)
+
+        val episode = season1Episodes.get(0)
+        val sourceList = getEpisodeVideoByLink(episode.dataId, mainUrl + searchedMovie.watchUrl)
+
+
+        println("Server Name : ${sourceList.get(0).serverName}")
+        println("Server Id : ${sourceList.get(0).dataId}")
 
     }
+}
+
+fun getEpisodeVideoByLink(id: String, detailFullLink: String): ArrayList<EpisodeData> {
+    val sourceList = ArrayList<EpisodeData>()
+    val requests = Requests(baseClient = httpClient, responseParser = parser)
+
+
+    runBlocking {
+        val document = getJsoup("https://theflixertv.to/ajax/episode/servers/$id")
+        val episodeElements: List<Element> = document.select(".ulclear .link-item")
+        for (episodeElement in episodeElements) {
+            val dataId = episodeElement.attr("data-id")
+            val serverName = episodeElement.select("span").text()
+            val updateUrl = updateEndpoint(detailFullLink) + ".$dataId"
+            val episodeData = EpisodeData(dataId, serverName, updateUrl)
+            sourceList.add(episodeData)
+        }
+
+    }
+    return sourceList
 }
 
 
@@ -38,6 +81,7 @@ fun parseRatingInfo(id: String): RatingInfo? {
         null
     }
 }
+
 
 fun getEpisodeBySeason(seasonId: String): ArrayList<Episode> {
     val document = getJsoup("$mainUrl/ajax/season/episodes/${seasonId}")

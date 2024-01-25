@@ -4,6 +4,7 @@ import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
+import com.azamovhudstc.scarpingtutorial.uzmovi.JsUnpacker
 import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
 
@@ -51,6 +52,7 @@ suspend fun getM3u8LocationFile(mainUrl: String) {
     println(data.url+"index.m3u8")
 
     checkM3u8Link(data.url+"playlist.m3u8")
+
 
 }
 
