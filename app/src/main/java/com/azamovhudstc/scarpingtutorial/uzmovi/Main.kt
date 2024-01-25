@@ -5,7 +5,6 @@ import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 import com.lagradost.nicehttp.Requests
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.runBlocking
 
 private val mainUrl = "http://uzmovi.com/"
@@ -13,7 +12,7 @@ private val mainUrl = "http://uzmovi.com/"
 //sorry my english is not good
 //:joy
 fun main() {
-    val list = searchMovie("SAKKIZ 8 OYOQ OSMINOG O'YINI PREMYERA" )
+    val list = searchMovie("Wenzdey")
 
     for (movie in list) {
         //this  loop is for testing
@@ -36,15 +35,43 @@ suspend fun getM3u8LocationFile(mainUrl: String) {
 
     val data = requests.get(
         mainUrl,
+
         headers = mapOf(
             "Cookie" to "_ym_uid=1664171290829008916; \"_pubcid\"=439b1e7c-eab3-4392-a9a7-19b1e53fe9f3; _ym_d=1696009917; __gads=ID=47342de96a689496-224c06c4fbdd00d6:T=1685651803:RT=1699104092:S=ALNI_Mb2ZhtSMyfS5P7PZrwc7eQv5t2WRg; __gpi=UID=00000c2ace922f58:T=1685651803:RT=1699104092:S=ALNI_MZzapclV2KKmb9oTHGcM6MVmi-EBg; comment_name=Foydalanuvchi; _pbjs_userid_consent_data=3524755945110770; _gid=GA1.2.704416453.1705347575; adrcid=ACr-r0sIPrgrh7iAg-Dg5rQ; adrcid_cd=1705407018194; _ym_isad=1; ci_session=rku1vq97bd4cdr8e1piekobjspkeuedl; _ga_XVBVMVW651=GS1.1.1705431478.202.1.1705433781.0.0.0; _ga=GA1.2.504275464.1685651802",
             "Connection" to "keep-alive",
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/237.84.2.178 Safari/537.36",
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        ), referer = "http://uzmovi.com/"
-    )
-    println(data.headers.toMap())
+        ), referer = "http://uzmovi.com/",
+        allowRedirects = true,
+        verify = true
 
+    )
+
+
+    println(data.url+"index.m3u8")
+
+    checkM3u8Link(data.url+"playlist.m3u8")
+
+}
+
+fun checkM3u8Link(url: String) {
+    runBlocking {
+        val requests = Requests(Utils.httpClient, responseParser = parser)
+        val data = requests.get(
+            mainUrl,
+
+            headers = mapOf(
+                "Cookie" to "_ym_uid=1664171290829008916; \"_pubcid\"=439b1e7c-eab3-4392-a9a7-19b1e53fe9f3; _ym_d=1696009917; __gads=ID=47342de96a689496-224c06c4fbdd00d6:T=1685651803:RT=1699104092:S=ALNI_Mb2ZhtSMyfS5P7PZrwc7eQv5t2WRg; __gpi=UID=00000c2ace922f58:T=1685651803:RT=1699104092:S=ALNI_MZzapclV2KKmb9oTHGcM6MVmi-EBg; comment_name=Foydalanuvchi; _pbjs_userid_consent_data=3524755945110770; _gid=GA1.2.704416453.1705347575; adrcid=ACr-r0sIPrgrh7iAg-Dg5rQ; adrcid_cd=1705407018194; _ym_isad=1; ci_session=rku1vq97bd4cdr8e1piekobjspkeuedl; _ga_XVBVMVW651=GS1.1.1705431478.202.1.1705433781.0.0.0; _ga=GA1.2.504275464.1685651802",
+                "Connection" to "keep-alive",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/237.84.2.178 Safari/537.36",
+                "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            ), referer = "http://uzmovi.com/",
+            allowRedirects = true,
+            verify = true
+
+        )
+        println(data.url)
+    }
 }
 
 fun movieDetails(parsedMovie: ParsedMovie) {
