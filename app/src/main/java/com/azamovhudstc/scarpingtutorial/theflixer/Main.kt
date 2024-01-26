@@ -4,14 +4,16 @@ import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
 import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.lagradost.nicehttp.Requests
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.jsoup.nodes.Element
 
 private const val mainUrl = "https://theflixertv.to"
 
 fun main(args: Array<String>) {
     runBlocking {
-        val list = searchMovieByQuery("Wednesday")
+        val list = searchMovieByQuery("Stranger things")
         val searchedMovie = list.get(0)
         val tvShow = getDetailFullMovie(searchedMovie.watchUrl)
         println("  Data ID: ${tvShow.dataId}")
@@ -27,8 +29,6 @@ fun main(args: Array<String>) {
         println("  Duration: ${tvShow.duration}")
         println("  Country: ${tvShow.country}")
         println("  Production: ${tvShow.production}")
-        println()
-
 
         val map = getSeasonList(tvShow.dataId)
         val season1Episodes = getEpisodeBySeason(map.get(map.keys.first())!!)
@@ -40,12 +40,80 @@ fun main(args: Array<String>) {
         println("Server Name : ${sourceList.get(0).serverName}")
         println("Server Id : ${sourceList.get(0).dataId}")
 
+        val pairData = checkM3u8FileByLink(sourceList.get(0))
+        getSources(pairData)
     }
 }
 
+
+suspend fun getSources(pairData: Pair<String, String>) {
+
+    val requests = Requests(baseClient = httpClient, responseParser = parser)
+    val response = requests.get(
+        url = "https://rabbitstream.net/ajax/embed-4/getSources?id=${pairData.second}",
+        headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Sec-Fetch-Dest" to "iframe",
+            "Sec-GPC" to "1",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "cross-site",
+            "Upgrade-Insecure-Requests" to "1",
+            "Referer" to "https://rabbitstream.net/embed-4/BI6Zv2yJxZBq?z=",
+            "X-Requested-With" to "XMLHttpRequest"
+        )
+    )
+
+    println(response.body.string())
+
+}
+
+
+suspend fun checkM3u8FileByLink(episodeData: EpisodeData): Pair<String, String> =
+    withContext(Dispatchers.IO) {
+        val document = getJsoup("$mainUrl/ajax/episode/sources/${episodeData.dataId}")
+        val json = document.body().select("body").text()
+        val regex = """"link"\s*:\s*"([^"]+)"""".toRegex()
+        val matchResult = regex.find(json)
+
+        val link = matchResult?.groupValues?.get(1) ?: ""
+        val request = Requests(baseClient = httpClient, responseParser = parser)
+
+        val response = request.get(
+            link,
+            headers = mapOf(
+                "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Sec-Fetch-Dest" to "iframe",
+                "Sec-GPC" to "1",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+                "Sec-Fetch-Mode" to "navigate",
+                "Sec-Fetch-Site" to "cross-site",
+                "Upgrade-Insecure-Requests" to "1",
+                "Referer" to "https://theflixertv.to/",
+            )
+        )
+
+        val html = response.body.string()
+
+        val realIdRegex = """data-realid="([^"]+)"""".toRegex()
+        val dataIdRegex = """data-id="([^"]+)"""".toRegex()
+
+        val realIdMatchResult = realIdRegex.find(html)
+        val dataIdMatchResult = dataIdRegex.find(html)
+
+        val realId = realIdMatchResult?.groupValues?.get(1) ?: ""
+        val dataId = dataIdMatchResult?.groupValues?.get(1) ?: ""
+
+        println("Real ID: $realId")
+        println("Data ID: $dataId")
+
+        return@withContext Pair(realId, dataId)
+
+    }
+
+
 fun getEpisodeVideoByLink(id: String, detailFullLink: String): ArrayList<EpisodeData> {
     val sourceList = ArrayList<EpisodeData>()
-    val requests = Requests(baseClient = httpClient, responseParser = parser)
 
 
     runBlocking {
@@ -61,25 +129,6 @@ fun getEpisodeVideoByLink(id: String, detailFullLink: String): ArrayList<Episode
 
     }
     return sourceList
-}
-
-
-fun parseRatingInfo(id: String): RatingInfo? {
-    val document = getJsoup("$mainUrl/ajax/vote_info/$id")
-
-    return try {
-        val title = document.select(".rs-title").text()
-        val totalVotes = document.select(".rr-mark").text().split(" ")[0].toInt()
-        val ratingPercentage = document.select(".progress-bar").attr("style")
-            .split("width: ")[1]
-            .split("%;")[0]
-            .toDouble()
-
-        RatingInfo(title, totalVotes, ratingPercentage)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
 }
 
 
@@ -147,7 +196,7 @@ suspend fun getDetailFullMovie(href: String): TVShow {
         duration = duration,
         country = country,
         production = production,
-        ratingInfo = parseRatingInfo(dataId)!!
+        ratingInfo = parseRatingInfo(dataId, mainUrl)!!
     )
 
 }
@@ -190,19 +239,3 @@ private fun searchMovieByQuery(query: String): ArrayList<Film> {
 }
 
 
-fun mapToFilm(map: Map<String, String>): Film {
-    return Film(
-        title = map["title"] ?: "",
-        year = map["year"] ?: "",
-        type = map["type"] ?: "",
-        posterUrl = map["posterUrl"] ?: "",
-        watchUrl = map["watchUrl"] ?: ""
-    )
-}
-
-
-fun addLineBetweenWords(text: String, line: String): String {
-    val words = text.split(" ")
-    val newText = words.joinToString(line)
-    return newText
-}
