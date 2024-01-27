@@ -11,60 +11,63 @@ import org.jsoup.nodes.Element
 
 private const val mainURL = "https://tas-ix.tv"
 
-fun main() {
-    val list = getListTv()
 
-    getTvFullDataByHref(list.get(list.lastIndex).href)
-}
+class TasixBase{
 
-fun getTvFullDataByHref(href: String) {
-    val doc = getJsoup(mainURL + href)
-    println(mainURL + href)
-    val iframeElement = doc.select("iframe").first()
-    val srcAttributeValue = iframeElement?.attr("src")
-    val pattern = Regex("""file=([^&]+)""")
+    fun main() {
+        val list = getListTv()
 
-    if (iframeElement != null) {
-        val matchResult = pattern.find(srcAttributeValue.toString())
+        getTvFullDataByHref(list.get(list.lastIndex).href)
+    }
+    fun getTvFullDataByHref(href: String) {
+        val doc = getJsoup(mainURL + href)
+        println(mainURL + href)
+        val iframeElement = doc.select("iframe").first()
+        val srcAttributeValue = iframeElement?.attr("src")
+        val pattern = Regex("""file=([^&]+)""")
 
-        // Extract the value of the file parameter if a match is found
-        val fileParameterValue = matchResult?.groups?.get(1)?.value
+        if (iframeElement != null) {
+            val matchResult = pattern.find(srcAttributeValue.toString())
 
-        if (fileParameterValue != null) {
-            println(fileParameterValue)
-            val requests = Requests(baseClient = httpClient, responseParser = parser)
-            runBlocking {
-                val doc = requests.get(fileParameterValue)
-                println(doc.body.string())
-                //I think this Little bit hard code
+            // Extract the value of the file parameter if a match is found
+            val fileParameterValue = matchResult?.groups?.get(1)?.value
+
+            if (fileParameterValue != null) {
+                println(fileParameterValue)
+                val requests = Requests(baseClient = httpClient, responseParser = parser)
+                runBlocking {
+                    val doc = requests.get(fileParameterValue)
+                    println(doc.body.string())
+                    //I think this Little bit hard code
+                }
+            } else {
+                println("File parameter not found.")
             }
+        }
+
+    }
+
+    fun getListTv(): List<Movie> {
+        val doc = getJsoup(mainURL)
+        val uzbekChannels: Element? = doc.select("li:has(a:contains(Узбекский каналы))").first()
+        val movieList = arrayListOf<Movie>()
+
+        if (uzbekChannels != null) {
+            // Select all links within the hidden-menu
+            val links: List<Element> = uzbekChannels.select(".hidden-menu a")
+
+            // Print the links
+            for ((count, link) in links.withIndex()) {
+                val href = link.attr("href")
+                val text = link.select("i").text()
+                println(" $count Text: $text")
+                movieList.add(Movie(href, text))
+            }
+
         } else {
-            println("File parameter not found.")
+            println("Uzbek channels not found.")
         }
+        return movieList
+
     }
-
-}
-
-fun getListTv(): List<Movie> {
-    val doc = getJsoup(mainURL)
-    val uzbekChannels: Element? = doc.select("li:has(a:contains(Узбекский каналы))").first()
-    val movieList = arrayListOf<Movie>()
-
-    if (uzbekChannels != null) {
-        // Select all links within the hidden-menu
-        val links: List<Element> = uzbekChannels.select(".hidden-menu a")
-
-        // Print the links
-        for (link in links) {
-            val href = link.attr("href")
-            val text = link.select("i").text()
-            println("Link: $href, Text: $text")
-            movieList.add(Movie(href, text))
-        }
-
-    } else {
-        println("Uzbek channels not found.")
-    }
-    return movieList
-
 }
