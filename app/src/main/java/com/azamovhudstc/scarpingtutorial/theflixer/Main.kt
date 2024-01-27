@@ -1,10 +1,10 @@
 package com.azamovhudstc.scarpingtutorial.theflixer
 
-import com.azamovhudstc.scarpingtutorial.main.Color
-import com.azamovhudstc.scarpingtutorial.main.printlnColored
+import com.azamovhudstc.scarpingtutorial.utils.Color
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
 import com.azamovhudstc.scarpingtutorial.utils.parser
+import com.azamovhudstc.scarpingtutorial.utils.printlnColored
 import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking

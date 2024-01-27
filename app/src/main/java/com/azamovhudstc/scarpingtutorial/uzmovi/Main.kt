@@ -1,10 +1,10 @@
 package com.azamovhudstc.scarpingtutorial.uzmovi
 
-import com.azamovhudstc.scarpingtutorial.main.Color
-import com.azamovhudstc.scarpingtutorial.main.printlnColored
+import com.azamovhudstc.scarpingtutorial.utils.Color
 import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.parser
+import com.azamovhudstc.scarpingtutorial.utils.printlnColored
 import com.azamovhudstc.scarpingtutorial.uzmovi.movie.ParsedMovie
 import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
