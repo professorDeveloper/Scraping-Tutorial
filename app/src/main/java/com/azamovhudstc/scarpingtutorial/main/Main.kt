@@ -5,6 +5,7 @@ import com.azamovhudstc.scarpingtutorial.idub.IdubBase
 import com.azamovhudstc.scarpingtutorial.theflixer.TheFlixerBase
 import com.azamovhudstc.scarpingtutorial.tv_online.TasixBase
 import com.azamovhudstc.scarpingtutorial.utils.Color
+import com.azamovhudstc.scarpingtutorial.utils.banner
 import com.azamovhudstc.scarpingtutorial.utils.displayLoadingAnimation
 import com.azamovhudstc.scarpingtutorial.utils.printlnColored
 import com.azamovhudstc.scarpingtutorial.uzmovi.UzmoviBase
@@ -18,19 +19,6 @@ fun main(args: Array<String>) {
     val idubBase = IdubBase()
     val theFlixerBase = TheFlixerBase()
     val scanner = Scanner(System.`in`)
-    val banner =
-        """"+---------------------------------------------------------------------------------+
-|                                                                                 |
-|  _  _  _         _         ______                              _                |
-| (_)(_)(_)       | |       / _____)                            (_)               |
-|  _  _  _  _____ | |__    ( (____    ____   ____  _____  ____   _  ____    ____  |
-| | || || || ___ ||  _ \    \____ \  / ___) / ___)(____ ||  _ \ | ||  _ \  / _  | |
-| | || || || ____|| |_) )   _____) )( (___ | |    / ___ || |_| || || | | |( (_| | |
-|  \_____/ |_____)|____/   (______/  \____)|_|    \_____||  __/ |_||_| |_| \___ | |
-|                                                        |_|              (_____| |
-| Telegram : https://t.me/native_applications                                     |
-| Github   :  https://github.com/professorDeveloper                               |                                                                               
-+---------------------------------------------------------------------------------+""".trimMargin()
     printlnColored(banner, Color.DARK_ORANGE)
     while (true) {
         printlnColored("1 -> Uzmovi", Color.GREEN)
@@ -38,15 +26,17 @@ fun main(args: Array<String>) {
         printlnColored("3 -> Idub", Color.YELLOW)
         printlnColored("4 -> Online Tv", Color.CYAN)
         printlnColored("5 -> Random Movies List ", Color.MAGENTA)
-        printlnColored("Select Platform: ", Color.WHITE)
+        printlnColored("Select Platform: ", Color.DARK_ORANGE)
+        val scannerForNext = Scanner(System.`in`)
 
-        val selectType = scanner.nextInt()
+        val selectType = scannerForNext.nextInt()
+        scannerForNext.nextLine() // Consume the newline character
 
         when (selectType) {
             1 -> {
 
-                println("Enter Movie Name :")
-                val movieName = scanner.next()
+                print("Enter Movie Name :")
+                val movieName = scanner.nextLine()
                 displayLoadingAnimation("Searching for movies", Color.GREEN)
                 val list = uzmoviBase.searchMovie(movieName)
                 printlnColored(" Selected Movie: ${list[0].title}", Color.GREEN)
@@ -58,7 +48,7 @@ fun main(args: Array<String>) {
 
                 runBlocking {
                     println("Enter Movie Name :")
-                    val movieName = scanner.next()
+                    val movieName = scanner.nextLine()
                     val list = theFlixerBase.searchMovieByQuery(movieName)
                     displayLoadingAnimation("Searching for movies", Color.BLUE)
                     val searchedMovie = list[0]
@@ -96,8 +86,8 @@ fun main(args: Array<String>) {
             }
             3 -> {
 
-                println("Enter Movie Name :")
-                val movieName = scanner.next()
+                print("Enter Movie Name :")
+                val movieName = scanner.nextLine()
                 displayLoadingAnimation("Searching for movies", Color.YELLOW)
                 runBlocking {
                     val list = idubBase.searchKdramma(movieName)
