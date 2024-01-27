@@ -15,7 +15,6 @@ fun main(args: Array<String>) {
     val idubBase = IdubBase()
     val theFlixerBase = TheFlixerBase()
     val scanner = Scanner(System.`in`)
-
     val banner =
         """"+---------------------------------------------------------------------------------+
 |                                                                                 |
@@ -26,9 +25,10 @@ fun main(args: Array<String>) {
 | | || || || ____|| |_) )   _____) )( (___ | |    / ___ || |_| || || | | |( (_| | |
 |  \_____/ |_____)|____/   (______/  \____)|_|    \_____||  __/ |_||_| |_| \___ | |
 |                                                        |_|              (_____| |
-|                                                                                 |
+| Telegram : https://t.me/native_applications                                     |
+| Github   :  https://github.com/professorDeveloper                               |                                                                               
 +---------------------------------------------------------------------------------+""".trimMargin()
-    printlnColored(banner,Color.DARK_ORANGE)
+    printlnColored(banner, Color.DARK_ORANGE)
     while (true) {
         printlnColored("1 -> Uzmovi", Color.GREEN)
         printlnColored("2 -> The Flixer", Color.BLUE)
@@ -62,6 +62,32 @@ fun main(args: Array<String>) {
                     val tvShow = theFlixerBase.getDetailFullMovie(searchedMovie.watchUrl)
 
                     printlnColored("  Data ID: ${tvShow.dataId}", Color.BLUE)
+                    printlnColored("  BannerUrl: ${tvShow.bannerUrl}", Color.BLUE)
+                    printlnColored("  Movie Title: ${tvShow.title}", Color.BLUE)
+                    printlnColored("  Movie Duration: ${tvShow.duration}", Color.BLUE)
+                    printlnColored("  Movie Country: ${tvShow.country}", Color.BLUE)
+                    printlnColored("  Movie Year: ${tvShow.year}", Color.BLUE)
+
+                    displayLoadingAnimation("Loading Episodes", Color.BLUE)
+                    val map = theFlixerBase.getSeasonList(tvShow.dataId)
+                    val season1Episodes =
+                        theFlixerBase.getEpisodeBySeason(map.get(map.keys.first())!!)
+
+                    val episode = season1Episodes.get(0)
+                    displayLoadingAnimation("Loading Sources", Color.BLUE)
+                    val sourceList = theFlixerBase.getEpisodeVideoByLink(
+                        episode.dataId,
+                        theFlixerBase.mainUrl + searchedMovie.watchUrl
+                    )
+
+
+                    printlnColored("Server Name : ${sourceList.get(0).serverName}",Color.BLUE)
+                    printlnColored("Server Id : ${sourceList.get(0).dataId}",Color.BLUE)
+
+                    displayLoadingAnimation("Get Subtitle", Color.BLUE)
+                    val pairData = theFlixerBase.checkM3u8FileByLink(sourceList.get(0))
+                    theFlixerBase.getSources(pairData)
+
                     // ... (print other details with colors)
                 }
             }
@@ -83,6 +109,7 @@ fun main(args: Array<String>) {
                 val list = tasixBase.getListTv()
                 println("Choose TV by Number :")
                 val selectedNumber = scanner.nextInt()
+
                 if (selectedNumber in list.indices) {
                     displayLoadingAnimation("Searching for TV", Color.YELLOW)
 
@@ -167,5 +194,5 @@ fun printColored(text: String, color: Color) {
 
 // Enum to represent ANSI color codes
 enum class Color {
-    RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE,DARK_ORANGE
+    RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, DARK_ORANGE
 }

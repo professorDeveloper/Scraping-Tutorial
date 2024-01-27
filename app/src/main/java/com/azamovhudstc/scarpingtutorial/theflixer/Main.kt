@@ -1,5 +1,7 @@
 package com.azamovhudstc.scarpingtutorial.theflixer
 
+import com.azamovhudstc.scarpingtutorial.main.Color
+import com.azamovhudstc.scarpingtutorial.main.printlnColored
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
 import com.azamovhudstc.scarpingtutorial.utils.parser
@@ -204,16 +206,15 @@ class TheFlixerBase() {
 
      fun searchMovieByQuery(query: String): ArrayList<Film> {
         val list = ArrayList<Film>()
-        println(
+        printlnColored(
             "------------------------------ ${
                 addLineBetweenWords(
                     query,
                     "-"
                 )
             }------------------------------\n"
-        )
+       , Color.BLUE )
 
-        println("Finding Movie......")
         val document =
             getJsoup(
                 "$mainUrl/search/${
