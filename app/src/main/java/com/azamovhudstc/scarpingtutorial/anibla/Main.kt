@@ -31,7 +31,7 @@ fun main(args: Array<String>) {
 
         printlnColored("Selected 1-Episode", Color.GREEN)
 
-        val episode = detailData.seria.get(0)
+        val episode = detailData.seria.reversed().get(0)
         amediaTvBase.getM3u8File(episode.video,episode._id)
     }
 }
