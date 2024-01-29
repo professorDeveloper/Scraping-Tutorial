@@ -25,14 +25,16 @@ fun main(args: Array<String>) {
         printlnColored("================= Episodes ================", Color.GREEN)
 
         detailData.seria.reversed().forEach {
-            printlnColored("Episode Name : ${it.name.uz}", Color.YELLOW)
-            printlnColored("Episode Length : ${it.length}", Color.YELLOW)
+            printColored("Episode Name : ", Color.BLUE)
+            printColored(it.name.uz + "\n", Color.GREEN)
+            printColored("Episode Length : ", Color.BLUE)
+            printColored("${it.length.substring(3)} min\n", Color.GREEN)
         }
 
         printlnColored("Selected 1-Episode", Color.GREEN)
 
         val episode = detailData.seria.reversed().get(0)
-        amediaTvBase.getM3u8File(episode.video,episode._id)
+        amediaTvBase.getM3u8File(episode.video, episode._id)
     }
 }
 
@@ -42,7 +44,7 @@ class AmediaTvBase {
     private val requests = Requests(baseClient = Utils.httpClient, responseParser = parser)
 
     suspend fun getFullDataById(data: Data): DetailData {
-        displayLoadingAnimation("Paring Detail...",Color.GREEN)
+        displayLoadingAnimation("Paring Detail...", Color.GREEN)
         val responseData =
             requests.get("https://cdn.amediatv.uz/api/season/v2/${data._id}").parsed<DetailData>()
 
@@ -51,7 +53,7 @@ class AmediaTvBase {
 
 
     suspend fun getM3u8File(href: String, dataId: String) {
-        displayLoadingAnimation("Parsing File....",Color.GREEN)
+        displayLoadingAnimation("Parsing File....", Color.GREEN)
         val document = Utils.getJsoup(href)
 
         val fileAttributeValue = extractFileAttributeValue(document!!.html())
@@ -59,10 +61,10 @@ class AmediaTvBase {
 
     }
 
- private   fun extractFileAttributeValue(scriptContent: String): String {
-     val regex = """file\s*:\s*['"]([^'"]+)['"]""".toRegex()
+    private fun extractFileAttributeValue(scriptContent: String): String {
+        val regex = """file\s*:\s*['"]([^'"]+)['"]""".toRegex()
         val matchResult = regex.find(scriptContent)
-        return matchResult?.groupValues?.get(1) !!
+        return matchResult?.groupValues?.get(1)!!
     }
 
     suspend fun searchByQuery(query: String): AmediaSearchData {
