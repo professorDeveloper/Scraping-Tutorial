@@ -12,15 +12,13 @@ fun main(args: Array<String>) {
     val amediaTvBase = AmediaTvBase()
 
     runBlocking {
-        val data = amediaTvBase.searchByQuery("Naruto")
+        val data = amediaTvBase.searchByQuery("Doktor")
         showData(data)
 
         printlnColored("Selected Anime ${data.data.get(0).name.uz}", Color.GREEN)
         val detailData = amediaTvBase.getFullDataById(data.data.get(0))
         println("Anime Name : ${detailData.data.name.uz}")
         println("Anime Created : ${detailData.data.createdAt}")
-        println("Anime Video Stream Url : ${detailData.data.video}")
-        println("Anime Download Url : ${detailData.data.url}")
         println("Anime Studios : ${detailData.data.studia}")
         printlnColored("================= Episodes ================", Color.GREEN)
 
@@ -28,7 +26,7 @@ fun main(args: Array<String>) {
             printColored("Episode Name : ", Color.BLUE)
             printColored(it.name.uz + "\n", Color.GREEN)
             printColored("Episode Length : ", Color.BLUE)
-            printColored("${it.length.substring(3)} min\n", Color.GREEN)
+            printColored("${it.length} min\n", Color.GREEN)
         }
 
         printlnColored("Selected 1-Episode", Color.GREEN)
