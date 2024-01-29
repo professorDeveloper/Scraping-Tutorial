@@ -12,7 +12,7 @@ fun main(args: Array<String>) {
     val amediaTvBase = AmediaTvBase()
 
     runBlocking {
-        val data = amediaTvBase.searchByQuery("Bir")
+        val data = amediaTvBase.searchByQuery("Naruto")
         showData(data)
 
         printlnColored("Selected Anime ${data.data.get(0).name.uz}", Color.GREEN)
