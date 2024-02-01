@@ -1,5 +1,6 @@
 package com.azamovhudstc.scarpingtutorial.main
 
+import com.azamovhudstc.scarpingtutorial.anibla.AmediaTvBase
 import com.azamovhudstc.scarpingtutorial.asilmedia.AsilMediaBase
 import com.azamovhudstc.scarpingtutorial.idub.IdubBase
 import com.azamovhudstc.scarpingtutorial.theflixer.TheFlixerBase
@@ -15,6 +16,7 @@ import java.util.*
 fun main(args: Array<String>) {
     val uzmoviBase = UzmoviBase()
     val asilMediaBase = AsilMediaBase()
+    val amediaTvBase = AmediaTvBase()
     val tasixBase = TasixBase()
     val idubBase = IdubBase()
     val theFlixerBase = TheFlixerBase()
@@ -74,8 +76,8 @@ fun main(args: Array<String>) {
                     )
 
 
-                    printlnColored("Server Name : ${sourceList.get(0).serverName}",Color.BLUE)
-                    printlnColored("Server Id : ${sourceList.get(0).dataId}",Color.BLUE)
+                    printlnColored("Server Name : ${sourceList.get(0).serverName}", Color.BLUE)
+                    printlnColored("Server Id : ${sourceList.get(0).dataId}", Color.BLUE)
 
                     displayLoadingAnimation("Get Subtitle", Color.BLUE)
                     val pairData = theFlixerBase.checkM3u8FileByLink(sourceList.get(0))
