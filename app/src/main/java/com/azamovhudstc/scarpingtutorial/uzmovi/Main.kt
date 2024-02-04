@@ -36,14 +36,16 @@ class UzmoviBase() {
 
         val nextRequestForM3u8 = requests.get(
             data.url + "index.m3u8",
-            referer = "http://uzmovi.com/",
+            referer = "http://uzmovi.com"
         )
+
+        println(nextRequestForM3u8.body.string())
 
     }
 
 
     fun movieDetails(parsedMovie: ParsedMovie) {
-        val doc = getJsoup(parsedMovie.href)
+        val doc = getJsoup("http://uzmovi.com/tarjima-kinolarri/6017-sakkiz-8-oyoq-osminog-oyini-premyera.html")
         val tabPaneElement =
             doc.select(".tab-pane.fade.in.active").first()// This Code Supported CSS
         if (tabPaneElement?.getElementById("online9") != null) {
@@ -155,7 +157,7 @@ class UzmoviBase() {
 //:joy
 fun main() {
     val uzmovi= UzmoviBase()
-    val list = uzmovi.searchMovie("Sakkiz oyoq " )
+    val list = uzmovi.searchMovie("Sakkiz oyoq o`yini" )
 
     for (movie in list) {
         //this  loop is for testing

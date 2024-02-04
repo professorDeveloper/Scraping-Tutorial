@@ -1,19 +1,65 @@
 package com.azamovhudstc.scarpingtutorial.asilmedia
 
 import com.azamovhudstc.scarpingtutorial.asilmedia.model.Media
+import com.azamovhudstc.scarpingtutorial.asilmedia.model.MovieInfo
 import com.azamovhudstc.scarpingtutorial.utils.Utils
+import com.azamovhudstc.scarpingtutorial.utils.parser
+import com.lagradost.nicehttp.Requests
+import kotlinx.coroutines.runBlocking
 import org.jsoup.select.Elements
 
 private const val mainUrl = "http://asilmedia.org"
 
 
+fun main(args: Array<String>) {
+
+    runBlocking {
+        val base =AsilMediaBase()
+        base.searchMovieByName("")
+    }
+}
 class AsilMediaBase {
 
-    fun main(args: Array<String>) {
-        val homeList = getMovieList()
 
-        val data = homeList.get(homeList.lastIndex - 1)
-        getMovieDetails(data.url)
+    suspend fun searchMovieByName(query: String): ArrayList<MovieInfo> {
+        val movieList = ArrayList<MovieInfo>()
+        val searchRequest = Requests(baseClient = Utils.httpClient, responseParser = parser).post(
+            mainUrl,
+            data = mapOf(
+                "story" to query,
+                "do" to "search",
+                "subaction" to "search"
+            )
+        )
+
+        val document = searchRequest.document
+        val articles = document.select("article.shortstory-item")
+        for (article in articles) {
+            val genre = article.select("div.genre").text()
+            val rating = article.select("span.ratingplus").text()
+            val title = article.select("header.moviebox-meta h2.title").text()
+            val image = article.select("picture.poster-img img").attr("data-src")
+            val href = article.select("a.flx-column-reverse").attr("href")
+            val quality = article.select("div.badge-tleft span.is-first").eachText()
+            val year = article.select("div.year a").text()
+
+            val movieInfo = MovieInfo(genre, rating, title, image, href, quality, year)
+            movieList.add(movieInfo)
+        }
+
+        // You can now work with the list of MovieInfo objects
+        for (movieInfo in movieList) {
+            println("Genre: ${movieInfo.genre}")
+            println("Rating: ${movieInfo.rating}")
+            println("Title: ${movieInfo.title}")
+            println("Image: ${mainUrl+movieInfo.image}")
+            println("Href: ${movieInfo.href}")
+            println("Quality: ${movieInfo.quality}")
+            println("Year: ${movieInfo.year}")
+            println("---------------")
+        }
+        return movieList
+
     }
 
     fun getMovieList(): ArrayList<Media> {
