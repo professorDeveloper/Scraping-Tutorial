@@ -1,5 +1,6 @@
 package com.azamovhudstc.scarpingtutorial.asilmedia
 
+import com.azamovhudstc.scarpingtutorial.asilmedia.model.FullMovieData
 import com.azamovhudstc.scarpingtutorial.asilmedia.model.Media
 import com.azamovhudstc.scarpingtutorial.asilmedia.model.MovieInfo
 import com.azamovhudstc.scarpingtutorial.utils.Utils
@@ -14,10 +15,12 @@ private const val mainUrl = "http://asilmedia.org"
 fun main(args: Array<String>) {
 
     runBlocking {
-        val base =AsilMediaBase()
-        base.searchMovieByName("")
+        val base = AsilMediaBase()
+        val list = base.searchMovieByName("Ajobtovur Ishlar")
+        var selectedMovie = base.getMovieDetails(list.get(0).href)
     }
 }
+
 class AsilMediaBase {
 
 
@@ -52,7 +55,7 @@ class AsilMediaBase {
             println("Genre: ${movieInfo.genre}")
             println("Rating: ${movieInfo.rating}")
             println("Title: ${movieInfo.title}")
-            println("Image: ${mainUrl+movieInfo.image}")
+            println("Image: ${mainUrl + movieInfo.image}")
             println("Href: ${movieInfo.href}")
             println("Quality: ${movieInfo.quality}")
             println("Year: ${movieInfo.year}")
@@ -86,14 +89,57 @@ class AsilMediaBase {
 
     fun getMovieDetails(href: String) {
         val document = Utils.getJsoup(href)
-        val downloadList: Elements = document.select("#download1 .downlist-inner a[href]")
+        val year: String =
+            document.select("div.fullmeta-item span.fullmeta-label:contains(Год) + span.fullmeta-seclabel a")
+                .text()
+        val country: String =
+            document.select("div.fullmeta-item span.fullmeta-label:contains(Страна) + span.fullmeta-seclabel a")
+                .text()
+        val duration: String =
+            document.select("div.fullmeta-item span.fullmeta-label:contains(Продолжительность) + span.fullmeta-seclabel a")
+                .text()
 
-        // Iterate through download links and print the URLs
-        downloadList.forEachIndexed { index, element ->
-            val fileUrl = element.attr("href")
-            val parsedUrl = parseUrl(fileUrl)
-            println("Download URL $index: $parsedUrl")
-        }
+        val posterImageSrc: String =
+            document.select("div.poster picture.poster-img img.lazyload").attr("data-src")
+
+        // Extracting information from the parsed HTML
+        val genres: List<Pair<String, String>> =
+            document.select("div.fullinfo-list span.list-label:contains(Жанры) + span a")
+                .map { Pair(it.text(), it.attr("href")) }
+
+        val directors: List<Pair<String, String>> =
+            document.select("div.fullinfo-list span.list-label:contains(Режиссер) + span a")
+                .map { Pair(it.text(), it.attr("href")) }
+
+        val actors: List<Pair<String, String>> =
+            document.select("div.fullinfo-list span.list-label:contains(Актеры) + span a")
+                .map { Pair(it.text(), it.attr("href")) }
+
+        val pattern = Regex("""<option value="([^"]+)">(.*?)</option>""")
+
+        // Find all matches in the HTML content
+        val matches = pattern.findAll(document.html())
+
+        // Process the matches
+        val options = matches.map {
+            val value = it.groupValues[1]
+            val text = it.groupValues[2]
+            Pair(text, value)
+        }.toList()
+
+        val imageUrls = document.select(".xfieldimagegallery img.lazyload[data-src]")
+            .map { it.attr("data-src") }
+
+        val descriptionElements = document.select("span[itemprop=description]")
+        val regex = Regex("\\b[а-яА-Я]+\\b")
+        val text = descriptionElements.select("div > p").first()?.text() ?: ""
+        val nonRussianDescription =regex.replace(text, "").trim()
+
+// Filter out paragraphs with Russian characters
+
+        println("Description: $nonRussianDescription")
+
+        // Extension function to check if a character is Russian
 
 
         // Extract the video URL from the iframe inside the "cn-content" div
@@ -101,9 +147,21 @@ class AsilMediaBase {
         val iframeElement = videoDiv?.selectFirst("iframe")
         val videoUrl = iframeElement?.attr("src")
         val parsedUrl = parseUrl(videoUrl!!)
+        val data = FullMovieData(
+            year = year,
+            country = country,
+            duration = duration,
+            posterImageSrc = posterImageSrc,
+            genres = genres,
+            directors = directors,
+            actors = actors,
+            options = options.distinct(),
+            imageUrls = imageUrls,
+            description = nonRussianDescription!!,
+            videoUrl = parsedUrl!!
+        )
+        println(data.toString())
 
-        // Print the extracted video URL
-        println("Video URL: $parsedUrl")
     }
 
     fun parseUrl(url: String): String? {
@@ -125,4 +183,8 @@ class AsilMediaBase {
         return null
     }
 
+}
+
+fun Char.isRussian(): Boolean {
+    return this in '\u0400'..'я' || this == 'ё' || this == 'Ё'
 }
