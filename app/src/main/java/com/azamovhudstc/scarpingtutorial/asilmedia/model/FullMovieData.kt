@@ -13,7 +13,8 @@ data class FullMovieData(
     val options: List<Pair<String, String>>,
     val imageUrls: List<String>,
     val description: String,
-    val videoUrl: String
+    val videoUrl: String,
+    val IMDB_rating:String,
 )
 
 {
@@ -42,6 +43,8 @@ data class FullMovieData(
             Description: $description
             
             Video URL: $videoUrl
+            
+            IMDB_rating: $IMDB_rating
         """.trimIndent()
     }
 

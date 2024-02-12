@@ -48,6 +48,7 @@ dependencies {
     implementation 'org.java-websocket:Java-WebSocket:1.4.0'
 
     implementation "dev.datlag.jsunpacker:jsunpacker:1.0.1"
+    implementation 'io.apisense:rhino-android:1.0'
 
     //and we need FireFox browser because this browser run away debug mode
 }

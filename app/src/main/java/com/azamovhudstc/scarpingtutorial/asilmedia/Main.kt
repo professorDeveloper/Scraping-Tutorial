@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
 
     runBlocking {
         val base = AsilMediaBase()
-        val list = base.searchMovieByName("Ajobtovur Ishlar")
+        val list = base.searchMovieByName("Asalarichi Uzbek tilida")
         var selectedMovie = base.getMovieDetails(list.get(0).href)
     }
 }
@@ -95,9 +95,11 @@ class AsilMediaBase {
         val country: String =
             document.select("div.fullmeta-item span.fullmeta-label:contains(Страна) + span.fullmeta-seclabel a")
                 .text()
-        val duration: String =
+        val duration2: String =
             document.select("div.fullmeta-item span.fullmeta-label:contains(Продолжительность) + span.fullmeta-seclabel a")
                 .text()
+        val timePattern = Regex("\\d{2,3}\\s*мин\\.|\\d{2}:\\d{2}")
+        val duration = timePattern.findAll(duration2).map { it.value }.toList().get(0)
 
         val posterImageSrc: String =
             document.select("div.poster picture.poster-img img.lazyload").attr("data-src")
@@ -131,15 +133,11 @@ class AsilMediaBase {
             .map { it.attr("data-src") }
 
         val descriptionElements = document.select("span[itemprop=description]")
-        val regex = Regex("\\b[а-яА-Я]+\\b")
-        val text = descriptionElements.select("div > p").first()?.text() ?: ""
-        val nonRussianDescription =regex.replace(text, "").trim()
+        val nonRussianDescription = descriptionElements.text()
 
-// Filter out paragraphs with Russian characters
 
-        println("Description: $nonRussianDescription")
 
-        // Extension function to check if a character is Russian
+        val rating = document.select(".r-im.txt-bold500.pfrate-count").text()
 
 
         // Extract the video URL from the iframe inside the "cn-content" div
@@ -147,6 +145,7 @@ class AsilMediaBase {
         val iframeElement = videoDiv?.selectFirst("iframe")
         val videoUrl = iframeElement?.attr("src")
         val parsedUrl = parseUrl(videoUrl!!)
+
         val data = FullMovieData(
             year = year,
             country = country,
@@ -158,7 +157,8 @@ class AsilMediaBase {
             options = options.distinct(),
             imageUrls = imageUrls,
             description = nonRussianDescription!!,
-            videoUrl = parsedUrl!!
+            videoUrl = parsedUrl!!,
+            IMDB_rating = rating
         )
         println(data.toString())
 
