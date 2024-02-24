@@ -4,7 +4,11 @@ import com.azamovhudstc.scarpingtutorial.asilmedia.model.FullMovieData
 import com.azamovhudstc.scarpingtutorial.asilmedia.model.Media
 import com.azamovhudstc.scarpingtutorial.asilmedia.model.MovieInfo
 import com.azamovhudstc.scarpingtutorial.utils.Utils
+import com.azamovhudstc.scarpingtutorial.utils.parser
+import com.lagradost.nicehttp.Requests
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.jsoup.select.Elements
 
 private const val mainUrl = "http://asilmedia.org"
@@ -143,7 +147,7 @@ class AsilMediaBase {
         return list
     }
 
-    fun getMovieDetails(href: String) {
+    suspend fun getMovieDetails(href: String) {
         val document =
             Utils.getJsoup(
                 href, mapOfHeaders = mapOf(
@@ -230,7 +234,29 @@ class AsilMediaBase {
             videoUrl = parsedUrl!!,
             IMDB_rating = rating
         )
+
+        val realLink = reGenerateMp4(parsedUrl)
         println(data.toString())
+        println(realLink)
+
+    }
+
+    private suspend fun reGenerateMp4(link: String) = withContext(Dispatchers.IO) {
+        val requests = Requests(baseClient = Utils.httpClient, responseParser = parser)
+        val response = requests.get(
+            link, headers = mapOf(
+                "Accept" to "/*",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
+                "Host" to "asilmedia.org",
+                "Cache-Control" to "no-cache",
+                "Pragma" to "no-cache",
+
+                "Connection" to "keep-alive",
+                "Upgrade-Insecure-Requests" to "1",
+
+                )
+        )
+        return@withContext response.url.toString()
 
     }
 
