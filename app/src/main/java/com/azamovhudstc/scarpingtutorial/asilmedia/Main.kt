@@ -228,12 +228,14 @@ class AsilMediaBase {
             genres = genres,
             directors = directors,
             actors = actors,
-            options = options.distinct(),
+            options = options.distinct().filterNot { it.second.toIntOrNull() != null },
             imageUrls = imageUrls,
             description = nonRussianDescription!!,
             videoUrl = parsedUrl!!,
             IMDB_rating = rating
         )
+        println(options.get(0).second)
+        println(options.get(0).first)
 
         val realLink = reGenerateMp4(parsedUrl)
         println(data.toString())
