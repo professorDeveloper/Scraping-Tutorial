@@ -219,6 +219,7 @@ class AsilMediaBase {
         val iframeElement = videoDiv?.selectFirst("iframe")
         val videoUrl = iframeElement?.attr("src")
         val parsedUrl = parseUrl(videoUrl!!)
+        //Buni Sindirish imkonsiz
 
         val data = FullMovieData(
             year = year,
