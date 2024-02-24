@@ -50,6 +50,7 @@ fun main(args: Array<String>) {
 
         val base = AsilMediaBase()
         base.searchMovieByName("Shelbi")
+        base.getMovieDetails(movieList.get(0).href)
     }
 }
 
