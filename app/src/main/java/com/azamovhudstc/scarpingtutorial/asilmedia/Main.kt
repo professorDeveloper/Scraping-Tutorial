@@ -4,20 +4,52 @@ import com.azamovhudstc.scarpingtutorial.asilmedia.model.FullMovieData
 import com.azamovhudstc.scarpingtutorial.asilmedia.model.Media
 import com.azamovhudstc.scarpingtutorial.asilmedia.model.MovieInfo
 import com.azamovhudstc.scarpingtutorial.utils.Utils
-import com.azamovhudstc.scarpingtutorial.utils.parser
-import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
 import org.jsoup.select.Elements
 
 private const val mainUrl = "http://asilmedia.org"
+private const val host = "asilmedia.org"
 
 
 fun main(args: Array<String>) {
+    val movieList = ArrayList<MovieInfo>()
 
     runBlocking {
+        val pathSegments = arrayListOf("films", "tarjima_kinolar", "page", "2")
+        val searchResponse = Utils.getJsoupAsilMedia(
+            host = host,
+            pathSegment = pathSegments, mapOfHeaders = mapOf(
+                "Accept" to "/*",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
+                "Host" to "asilmedia.org",
+                "Cache-Control" to "no-cache",
+                "Pragma" to "no-cache",
+
+                "Connection" to "keep-alive",
+                "Upgrade-Insecure-Requests" to "1",
+
+                )
+        )
+
+
+        val document = searchResponse
+        val articles = document.select("article.shortstory-item")
+        for (article in articles) {
+            val genre = article.select("div.genre").text()
+            val rating = article.select("span.ratingplus").text() ?: "+0"
+            val title = article.select("header.moviebox-meta h2.title").text()
+            val image = article.select("picture.poster-img img").attr("data-src")
+            val href = article.select("a.flx-column-reverse").attr("href")
+            val quality = article.select("div.badge-tleft span.is-first").eachText()
+            val year = article.select("div.year a").text()
+
+            val movieInfo = MovieInfo(genre, rating, title, image, href, quality, year)
+            movieList.add(movieInfo)
+        }
+        println(movieList)
+
         val base = AsilMediaBase()
-        val list = base.searchMovieByName("Asalarichi Uzbek tilida")
-        var selectedMovie = base.getMovieDetails(list.get(0).href)
+        base.searchMovieByName("Shelbi")
     }
 }
 
@@ -26,16 +58,26 @@ class AsilMediaBase {
 
     suspend fun searchMovieByName(query: String): ArrayList<MovieInfo> {
         val movieList = ArrayList<MovieInfo>()
-        val searchRequest = Requests(baseClient = Utils.httpClient, responseParser = parser).post(
-            mainUrl,
-            data = mapOf(
+        val searchRequest = Utils.getJsoupAsilMedia(
+            params = mapOf(
                 "story" to query,
                 "do" to "search",
                 "subaction" to "search"
-            )
+            ), host = host, mapOfHeaders =
+            mapOf(
+                "Accept" to "/*",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
+                "Host" to "asilmedia.org",
+                "Cache-Control" to "no-cache",
+                "Pragma" to "no-cache",
+
+                "Connection" to "keep-alive",
+                "Upgrade-Insecure-Requests" to "1",
+
+                )
         )
 
-        val document = searchRequest.document
+        val document = searchRequest
         val articles = document.select("article.shortstory-item")
         for (article in articles) {
             val genre = article.select("div.genre").text()
@@ -67,7 +109,20 @@ class AsilMediaBase {
 
     fun getMovieList(): ArrayList<Media> {
         val list = arrayListOf<Media>()
-        val doc = Utils.getJsoup("$mainUrl/films/tarjima_kinolar/")
+        var pathSegments = arrayListOf("films", "tarjima_kinolar")
+        val doc = Utils.getJsoup(
+            url = mainUrl + "/films/tarjima_kinolar", mapOfHeaders = mapOf(
+                "Accept" to "/*",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
+                "Host" to "asilmedia.org",
+                "Cache-Control" to "no-cache",
+                "Pragma" to "no-cache",
+
+                "Connection" to "keep-alive",
+                "Upgrade-Insecure-Requests" to "1",
+
+                )
+        )
         val elements = doc.getElementById("dle-content")
 
         val articleElements = elements!!.select("article")
@@ -88,7 +143,22 @@ class AsilMediaBase {
     }
 
     fun getMovieDetails(href: String) {
-        val document = Utils.getJsoup(href)
+        val document =
+            Utils.getJsoup(
+                href, mapOfHeaders = mapOf(
+                    "Accept" to "/*",
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
+                    "Host" to "asilmedia.org",
+                    "Cache-Control" to "no-cache",
+                    "Pragma" to "no-cache",
+
+                    "Connection" to "keep-alive",
+                    "Upgrade-Insecure-Requests" to "1",
+
+                    )
+            )
+        println(href)
+        println(document)
         val year: String =
             document.select("div.fullmeta-item span.fullmeta-label:contains(Год) + span.fullmeta-seclabel a")
                 .text()
@@ -134,7 +204,6 @@ class AsilMediaBase {
 
         val descriptionElements = document.select("span[itemprop=description]")
         val nonRussianDescription = descriptionElements.text()
-
 
 
         val rating = document.select(".r-im.txt-bold500.pfrate-count").text()
@@ -188,3 +257,5 @@ class AsilMediaBase {
 fun Char.isRussian(): Boolean {
     return this in '\u0400'..'я' || this == 'ё' || this == 'Ё'
 }
+
+
