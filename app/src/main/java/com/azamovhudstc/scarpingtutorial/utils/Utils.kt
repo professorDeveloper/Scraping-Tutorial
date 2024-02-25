@@ -44,9 +44,11 @@ object Utils {
                 requestBuilder.addHeader(it.key, it.value)
             }
         }
+        var data = httpClient.newCall(requestBuilder.build())
+            .execute()
 
-        return httpClient.newCall(requestBuilder.build())
-            .execute().body.string()
+        println(data.body?.string())
+        return data.body.string()
     }
 
     fun get(

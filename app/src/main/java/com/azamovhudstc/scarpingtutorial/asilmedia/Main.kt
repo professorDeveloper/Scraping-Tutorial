@@ -9,6 +9,8 @@ import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.jsoup.Connection
+import org.jsoup.Jsoup
 import org.jsoup.select.Elements
 
 private const val mainUrl = "http://asilmedia.org"
@@ -18,23 +20,26 @@ private const val host = "asilmedia.org"
 fun main(args: Array<String>) {
     val movieList = ArrayList<MovieInfo>()
 
+
     runBlocking {
-        val pathSegments = arrayListOf("films", "tarjima_kinolar", "page", "2")
-        val searchResponse = Utils.getJsoupAsilMedia(
-            host = host,
-            pathSegment = pathSegments, mapOfHeaders = mapOf(
-                "Accept" to "/*",
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
-                "Host" to "asilmedia.org",
-                "Cache-Control" to "no-cache",
-                "Pragma" to "no-cache",
+        val searchResponse =
+            Jsoup.connect("$mainUrl/popular.html")
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+                .followRedirects(true)
+                .headers(
+                    mapOf(
+                        "Content-Type" to "application/x-www-form-urlencoded",
+                        "Accept" to "/*",
+                        "Host" to "asilmedia.org",
+                        "Cache-Control" to "no-cache",
+                        "Pragma" to "no-cache",
+                        "Connection" to "keep-alive",
+                        "Upgrade-Insecure-Requests" to "1",
 
-                "Connection" to "keep-alive",
-                "Upgrade-Insecure-Requests" to "1",
+                        )
+                ).method(Connection.Method.GET).execute().parse()
 
-                )
-        )
-
+        println(searchResponse)
 
         val document = searchResponse
         val articles = document.select("article.shortstory-item")
@@ -53,7 +58,7 @@ fun main(args: Array<String>) {
         println(movieList)
 
         val base = AsilMediaBase()
-        base.searchMovieByName("Shelbi")
+//        base.searchMovieByName("Shelbi")
         base.getMovieDetails(movieList.get(0).href)
     }
 }
@@ -148,20 +153,21 @@ class AsilMediaBase {
     }
 
     suspend fun getMovieDetails(href: String) {
-        val document =
-            Utils.getJsoup(
-                href, mapOfHeaders = mapOf(
+        val document = Jsoup.connect(href)
+            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+            .followRedirects(true)
+            .headers(
+                mapOf(
+                    "Content-Type" to "application/x-www-form-urlencoded",
                     "Accept" to "/*",
-                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
                     "Host" to "asilmedia.org",
                     "Cache-Control" to "no-cache",
                     "Pragma" to "no-cache",
-
                     "Connection" to "keep-alive",
                     "Upgrade-Insecure-Requests" to "1",
 
                     )
-            )
+            ).method(Connection.Method.GET).execute().parse()
         println(href)
         println(document)
         val year: String =
@@ -170,11 +176,8 @@ class AsilMediaBase {
         val country: String =
             document.select("div.fullmeta-item span.fullmeta-label:contains(Страна) + span.fullmeta-seclabel a")
                 .text()
-        val duration2: String =
-            document.select("div.fullmeta-item span.fullmeta-label:contains(Продолжительность) + span.fullmeta-seclabel a")
-                .text()
-        val timePattern = Regex("\\d{2,3}\\s*мин\\.|\\d{2}:\\d{2}")
-        val duration = timePattern.findAll(duration2).map { it.value }.toList().get(0)
+        val durationElement = document.selectFirst(".fullmeta-item .fullmeta-seclabel a")?.text()
+        val duration = durationElement?.replace(" мин", "")
 
         val posterImageSrc: String =
             document.select("div.poster picture.poster-img img.lazyload").attr("data-src")
@@ -224,7 +227,7 @@ class AsilMediaBase {
         val data = FullMovieData(
             year = year,
             country = country,
-            duration = duration,
+            duration = duration ?: "",
             posterImageSrc = posterImageSrc,
             genres = genres,
             directors = directors,
