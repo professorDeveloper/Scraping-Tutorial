@@ -11,6 +11,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jsoup.Connection
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
 private const val mainUrl = "http://asilmedia.org"
@@ -24,42 +26,24 @@ fun main(args: Array<String>) {
     runBlocking {
         val searchResponse =
             Jsoup.connect("$mainUrl/popular.html")
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
                 .followRedirects(true)
                 .headers(
                     mapOf(
                         "Content-Type" to "application/x-www-form-urlencoded",
-                        "Accept" to "/*",
+                        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                         "Host" to "asilmedia.org",
                         "Cache-Control" to "no-cache",
                         "Pragma" to "no-cache",
                         "Connection" to "keep-alive",
                         "Upgrade-Insecure-Requests" to "1",
-
-                        )
-                ).method(Connection.Method.GET).execute().parse()
+                        "X-Requested-With" to "XMLHttpRequest"
+                    )
+                ).get()
 
         println(searchResponse)
 
-        val document = searchResponse
-        val articles = document.select("article.shortstory-item")
-        for (article in articles) {
-            val genre = article.select("div.genre").text()
-            val rating = article.select("span.ratingplus").text() ?: "+0"
-            val title = article.select("header.moviebox-meta h2.title").text()
-            val image = article.select("picture.poster-img img").attr("data-src")
-            val href = article.select("a.flx-column-reverse").attr("href")
-            val quality = article.select("div.badge-tleft span.is-first").eachText()
-            val year = article.select("div.year a").text()
-
-            val movieInfo = MovieInfo(genre, rating, title, image, href, quality, year)
-            movieList.add(movieInfo)
-        }
-        println(movieList)
-
         val base = AsilMediaBase()
-//        base.searchMovieByName("Shelbi")
-        base.getMovieDetails(movieList.get(0).href)
+        base.getLastNews()
     }
 }
 
@@ -76,7 +60,6 @@ class AsilMediaBase {
             ), host = host, mapOfHeaders =
             mapOf(
                 "Accept" to "/*",
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
                 "Host" to "asilmedia.org",
                 "Cache-Control" to "no-cache",
                 "Pragma" to "no-cache",
@@ -123,7 +106,6 @@ class AsilMediaBase {
         val doc = Utils.getJsoup(
             url = mainUrl + "/films/tarjima_kinolar", mapOfHeaders = mapOf(
                 "Accept" to "/*",
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
                 "Host" to "asilmedia.org",
                 "Cache-Control" to "no-cache",
                 "Pragma" to "no-cache",
@@ -245,6 +227,7 @@ class AsilMediaBase {
         println(data.toString())
         println(realLink)
 
+
     }
 
     private suspend fun reGenerateMp4(link: String) = withContext(Dispatchers.IO) {
@@ -252,7 +235,6 @@ class AsilMediaBase {
         val response = requests.get(
             link, headers = mapOf(
                 "Accept" to "/*",
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.101.76 Safari/537.36",
                 "Host" to "asilmedia.org",
                 "Cache-Control" to "no-cache",
                 "Pragma" to "no-cache",
@@ -264,6 +246,147 @@ class AsilMediaBase {
         )
         return@withContext response.url.toString()
 
+    }
+
+    fun extractMovieList(document: Document): List<MovieInfo> {
+        val movieElements = document.select("article.shortstory-item")
+
+        return movieElements.map { element ->
+            extractMovieInfo(element)
+        }
+    }
+
+    fun extractMovieInfo(element: org.jsoup.nodes.Element): MovieInfo {
+        val title = element.select("h2.title.is-6.txt-ellipsis.mb-2").text()
+        val year = element.select("div.year a").text()
+        val genre = element.select("div.genre").text()
+        val rating = element.select("span.ratingtypeplusminus.ratingplus").text()
+        val image = element.select("img.img-fit").attr("data-src")
+        val href = element.select("a[href]").attr("href")
+        val quality = element.select("div.badge-tleft span.is-first").eachText()
+
+        return MovieInfo(genre, rating, title, image, href, quality, year)
+    }
+
+    suspend fun getNeedWatch() {
+        val document =
+            Jsoup.connect(mainUrl + "/whatchnow.html")
+                .followRedirects(true)
+                .headers(
+                    mapOf(
+                        "Content-Type" to "application/x-www-form-urlencoded",
+                        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                        "Host" to "asilmedia.org",
+                        "Cache-Control" to "no-cache",
+                        "Pragma" to "no-cache",
+                        "Connection" to "keep-alive",
+                        "Upgrade-Insecure-Requests" to "1",
+                        "X-Requested-With" to "XMLHttpRequest"
+                    )
+                ).get()
+        val movieList = extractMovieList(document)
+
+        movieList.forEach { movieInfo ->
+            println(movieInfo)
+            println("-------------")
+        }
+
+
+    }
+
+//    suspend fun
+
+    suspend fun getPopularData() {
+        val document =
+            Jsoup.connect(mainUrl)
+                .followRedirects(true)
+                .headers(
+                    mapOf(
+                        "Content-Type" to "application/x-www-form-urlencoded",
+                        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                        "Host" to "asilmedia.org",
+                        "Cache-Control" to "no-cache",
+                        "Pragma" to "no-cache",
+                        "Connection" to "keep-alive",
+                        "Upgrade-Insecure-Requests" to "1",
+                        "X-Requested-With" to "XMLHttpRequest"
+                    )
+                ).get()
+        val movieItems: List<Element> = document.select(".slider-item.moviebox")
+
+        val movieList = movieItems.map { movieItem ->
+            val title: String = movieItem.select(".title").text()
+            val year: String = movieItem.select(".year a").text()
+            val genre: String = movieItem.select(".genre").text()
+            val rating: String = movieItem.select(".ratingtypeplusminus").text()
+            val image: String = movieItem.select(".img-fit").attr("data-src")
+            val href: String = movieItem.select("a").attr("href")
+            val quality: List<String> = movieItem.select(".badge-tleft span").eachText()
+            MovieInfo(
+                genre = genre,
+                rating = rating,
+                title = title,
+                image = image,
+                href = href,
+                quality = quality,
+                year = year
+            )
+        }
+
+        for (movieInfo in movieList) {
+            println(movieInfo)
+        }
+
+
+    }
+
+    fun getLastPagination(page: Int) {
+        val document =
+            Jsoup.connect("$mainUrl/lastnews/page/$page")
+                .followRedirects(true)
+                .headers(
+                    mapOf(
+                        "Content-Type" to "application/x-www-form-urlencoded",
+                        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                        "Host" to "asilmedia.org",
+                        "Cache-Control" to "no-cache",
+                        "Pragma" to "no-cache",
+                        "Connection" to "keep-alive",
+                        "Upgrade-Insecure-Requests" to "1",
+                        "X-Requested-With" to "XMLHttpRequest"
+                    )
+                ).get()
+        val movieList = extractMovieList(document)
+
+        movieList.forEach { movieInfo ->
+            println(movieInfo)
+            println("-------------")
+        }
+    }
+
+
+    fun getLastNews() {
+        val document =
+            Jsoup.connect(mainUrl + "/lastnews/")
+                .followRedirects(true)
+                .headers(
+                    mapOf(
+                        "Content-Type" to "application/x-www-form-urlencoded",
+                        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                        "Host" to "asilmedia.org",
+                        "Cache-Control" to "no-cache",
+                        "Pragma" to "no-cache",
+                        "Connection" to "keep-alive",
+                        "Upgrade-Insecure-Requests" to "1",
+                        "X-Requested-With" to "XMLHttpRequest"
+                    )
+                ).get()
+        val movieList = extractMovieList(document)
+
+        movieList.forEach { movieInfo ->
+            println(movieInfo)
+            println("-------------")
+        }
     }
 
     fun parseUrl(url: String): String? {

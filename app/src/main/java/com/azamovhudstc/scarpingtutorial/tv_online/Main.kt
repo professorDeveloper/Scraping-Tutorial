@@ -10,10 +10,17 @@ import com.azamovhudstc.scarpingtutorial.utils.printlnColored
 import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
 
 
 private const val mainURL = "https://tas-ix.tv"
+fun main(args: Array<String>) {
 
+    var tasixBase = TasixBase()
+    val list = tasixBase.getListTv()
+    tasixBase.getTvFullDataByHref(list.get(list.lastIndex).href)
+
+}
 
 class TasixBase {
 
@@ -23,10 +30,11 @@ class TasixBase {
         getTvFullDataByHref(list.get(list.lastIndex).href)
     }
 
+
+
     fun getTvFullDataByHref(href: String) {
         try {
-            val doc = getJsoup(mainURL + href)
-            println(mainURL + href)
+            val doc = getJsoup(href)
             val iframeElement = doc.select("iframe").first()
             val srcAttributeValue = iframeElement?.attr("src")
             val pattern = Regex("""file=([^&]+)""")
@@ -38,13 +46,7 @@ class TasixBase {
                 val fileParameterValue = matchResult?.groups?.get(1)?.value
 
                 if (fileParameterValue != null) {
-                    println(fileParameterValue)
-                    val requests = Requests(baseClient = httpClient, responseParser = parser)
-                    runBlocking {
-                        val doc = requests.get(fileParameterValue)
-                        println(doc.body.string())
-                        //I think this Little bit hard code
-                    }
+                    println("Link ::"+fileParameterValue)
                 } else {
                     println("File parameter not found.")
                 }
@@ -55,29 +57,45 @@ class TasixBase {
         }
     }
 
+
+
+
+
     fun getListTv(): List<Movie> {
         displayLoadingAnimation("Loading Tv list", Color.YELLOW)
         val doc = getJsoup(mainURL)
-        val uzbekChannels: Element? = doc.select("li:has(a:contains(Узбекский каналы))").first()
-        val movieList = arrayListOf<Movie>()
-
-        if (uzbekChannels != null) {
+        val movieElements: Elements = doc.select(".tcarusel-item.main-news")
+        if (movieElements != null) {
             // Select all links within the hidden-menu
-            val links: List<Element> = uzbekChannels.select(".hidden-menu a")
+            movieElements
+                .map {
+                    val href = it.select("a[href]").attr("href")
+                    val title = it.select("a[href]").text()
+                    val image = it.select("img.xfieldimage").attr("src")
+                    val rating = it.select(".current-rating").text().toInt()
+                    printlnColored("  Text: ${removeNumbers(title)}", Color.YELLOW)
+                    printlnColored("  Image: $image", Color.DARK_ORANGE)
+                    printlnColored("  Href: $href", Color.CYAN)
+                    printlnColored("  Rating: $rating", Color.GREEN)
+                    printlnColored("-----------------------------", Color.YELLOW)
 
-            // Print the links
-            for ((count, link) in links.withIndex()) {
-                val href = link.attr("href")
-                val text = link.select("i").text()
-                val randomColors = Color.values().toList()
-                printlnColored(" $count Text: $text", color = randomColors.random())
-                movieList.add(Movie(href, text))
-            }
-
+                }
         } else {
-            printlnColored("Uzbek channels not found.",Color.YELLOW)
+            printlnColored("Uzbek channels not found.", Color.YELLOW)
         }
-        return movieList
+        return movieElements.map {
+            val href = it.select("a[href]").attr("href")
+            val title = it.select("a[href]").text()
+            val image = it.select("img.xfieldimage").attr("src")
+            val rating = it.select(".current-rating").text().toInt()
+
+            Movie(href, title, image, rating)
+        }
 
     }
+
+    fun removeNumbers(input: String): String {
+        return input.replace(Regex("\\d+"), "").trim()
+    }
+
 }
