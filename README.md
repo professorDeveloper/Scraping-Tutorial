@@ -1,4 +1,3 @@
-
 ### Setup
 
 In build.gradle repositories:
@@ -20,13 +19,20 @@ https://t.me/native_applications/124
 
 ```kotlin
 suspend fun main() {
+    val scannerForNext = Scanner(System.`in`)
     coroutineScope {
-        val requests = Requests(okHttpClient, responseParser = parser)
-        val jsonString = requests.get("https://swapi.dev/api/planets/1/").parsed<ParsedData>()
-        println(jsonString.created)
+        val uzmoviBase = UzmoviBase()
+        print("Enter Movie Name :")
+        val movieName = scanner.nextLine()
+        displayLoadingAnimation("Searching for movies", Color.GREEN)
+        val list = uzmoviBase.searchMovie(movieName)
+        printlnColored(" Selected Movie: ${list[0].title}", Color.GREEN)
+        displayLoadingAnimation("Loading Episodes", Color.GREEN)
+        uzmoviBase.movieDetails(list[0]) // Get Movie Details  Scraping by href
 
     }
 }
 
 ```
+
 ## _Thanks For_  [Blatzar](https://github.com/Blatzar)

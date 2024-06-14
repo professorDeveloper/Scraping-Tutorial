@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "ScarpingTutorial"
 include ':app'
+include ':tonconsole'

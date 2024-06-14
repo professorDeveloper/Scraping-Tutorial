@@ -1,7 +1,6 @@
 package com.azamovhudstc.scarpingtutorial
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import com.azamovhudstc.scarpingtutorial.shared.LocalStorage
 import com.azamovhudstc.scarpingtutorial.shared.parseJson
 import com.azamovhudstc.scarpingtutorial.shared.saveGson
@@ -12,21 +11,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 
-class MainActivity : AppCompatActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        val localStorage = LocalStorage(this)
-        //Enjoy My Code
-
-        val list = arrayListOf("SUB", "DUB", "GET", "DUB")
-        localStorage.json = list.saveGson()
-        println(localStorage.token)
-        println(localStorage.json.parseJson().toString())
-
-    }
-}
 
 
 private val mainUrl = "https://yugenanime.tv" //GET MAIN URL
@@ -56,6 +40,7 @@ suspend fun streamLink(
     val animeEpUrl = "$mainUrl$watchLink$animeEpCode"
     var yugenEmbedLink = getJsoup(animeEpUrl).getElementById("main-embed")!!.attr("src")
     if (!yugenEmbedLink.contains("https:")) yugenEmbedLink = "https:$yugenEmbedLink"
+    println(yugenEmbedLink)
     val mapOfHeaders = mutableMapOf(
         "X-Requested-With" to "XMLHttpRequest",
         "content-type" to "application/x-www-form-urlencoded; charset=UTF-8"
@@ -89,7 +74,6 @@ suspend fun returnEpMap(parseData: AnimeParseData): Map<String, Map<String, Stri
 
 suspend fun searchAnime(query: String): ArrayList<AnimeParseData> {
     val animeList = arrayListOf<AnimeParseData>()
-    var request = Utils.get("").parseJson()
     val url = "$mainUrl/discover/?q=$query" //GET SEARCH URL
     val doc = getJsoup(url) //REQUEST SEARCH
     val animeContent = doc.getElementsByClass("anime-meta") //GET ANIME LIST
