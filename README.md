@@ -13,7 +13,7 @@ implementation 'com.github.Blatzar:NiceHttp:0.4.4'
 ```
 
 ## Video tutorial 
-https://t.me/native_applications/124
+https://t.me/azamovme/124
 
 ### Scraping a document with Nice Http
 
