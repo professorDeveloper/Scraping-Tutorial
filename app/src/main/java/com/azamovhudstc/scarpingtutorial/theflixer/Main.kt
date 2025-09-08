@@ -150,7 +150,7 @@ class TheFlixerBase() {
             val imageUrl = episodeItem.select(".film-poster-img").attr("src")
 
             // Create an Episode object and add it to the list
-            episodesList.add(Episode(id, dataId, episodeNumber, title, imageUrl))
+            episodesList.add(Episode(id, dataId, episodeNumber, title))
         }
 
         return episodesList

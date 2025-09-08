@@ -15,6 +15,7 @@ object Utils {
     var httpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
+
         .callTimeout(2, TimeUnit.MINUTES)
         .build()
 
