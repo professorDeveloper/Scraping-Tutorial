@@ -1,5 +1,6 @@
 package com.azamovhudstc.scarpingtutorial.hentaimama
 
+import android.annotation.SuppressLint
 import com.azamovhudstc.scarpingtutorial.anime_pahe.ShowResponse
 import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.azamovhudstc.scarpingtutorial.utils.parser
@@ -11,7 +12,13 @@ import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.TlsVersion
 import org.slf4j.helpers.Util
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLSession
 
 data class VideoServer(
     val url: String,
@@ -26,7 +33,6 @@ class HentaiMama {
     val isDubAvailableSeparately = false
     val isNSFW = true
 
-
     val okClient = OkHttpClient.Builder()
         .addInterceptor { chain ->
             val request = chain.request().newBuilder()
@@ -37,6 +43,35 @@ class HentaiMama {
                 )
                 .build()
             chain.proceed(request)
+        }
+        .apply {
+            // Create a trust manager that accepts all certificates
+            val trustAllCerts = arrayOf<TrustManager>(@SuppressLint("CustomX509TrustManager")
+            object : X509TrustManager {
+                @SuppressLint("TrustAllX509TrustManager")
+                override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                @SuppressLint("TrustAllX509TrustManager")
+                override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+            })
+
+            // Install the all-trusting trust manager
+            val sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+
+            sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+            hostnameVerifier { _, _ -> true }
+
+            // Add connection specs for better compatibility
+            connectionSpecs(listOf(
+                ConnectionSpec.MODERN_TLS,
+                ConnectionSpec.COMPATIBLE_TLS,
+                ConnectionSpec.CLEARTEXT
+            ))
+
+            connectTimeout(30, TimeUnit.SECONDS)
+            readTimeout(30, TimeUnit.SECONDS)
+            writeTimeout(30, TimeUnit.SECONDS)
         }
         .build()
 
@@ -65,7 +100,6 @@ class HentaiMama {
 
         return episodes
     }
-
 
     suspend fun loadVideoServers(
         episodeLink: String,
