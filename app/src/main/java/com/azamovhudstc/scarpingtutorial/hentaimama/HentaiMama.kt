@@ -155,20 +155,22 @@ class HentaiMama {
             }
         }
 
-        suspend fun extract(server: VideoServer): VideoContainer {
+        suspend fun extract(server: VideoServer): String {
+            val client = Requests(Utils.httpClient, responseParser = parser)
             val doc = client.get(server.url)
 
             doc.document.selectFirst("video>source")?.attr("src")?.let { directSrc ->
-                return VideoContainer(
+                VideoContainer(
                     listOf(
                         Video(null, VideoType.CONTAINER, directSrc, getSize(directSrc))
                     )
                 )
+                return directSrc
             }
 
             // Extract sources from JavaScript
             val unSanitized =
-                doc.text.findBetween("sources: [", "],") ?: return VideoContainer(listOf())
+                doc.text.findBetween("sources: [", "],") ?: return ""
 
             // Sanitize the JSON string
             val sanitizedJson = "[${
@@ -190,9 +192,8 @@ class HentaiMama {
                     Video(null, VideoType.CONTAINER, element.file, getSize(element.file))
             }
 
-            return VideoContainer(videos)
+            return  videos.find {  it.type == VideoType.M3U8}?.url ?: ""
         }
-
         data class ResponseElement(
             val type: String,
             val file: String
@@ -246,10 +247,6 @@ fun main(args: Array<String>) {
         val videoServers = parser.loadVideoServers(episodes.get(0).link, null)
         extractor.extract(
             videoServers.get(0)
-        ).videos.onEach {
-            println(it.url)
-            println(it.size)
-            println(it.type)
-        }
+        ).let { println(it) }
     }
 }
