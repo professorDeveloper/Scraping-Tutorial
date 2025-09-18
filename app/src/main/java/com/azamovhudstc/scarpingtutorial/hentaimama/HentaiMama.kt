@@ -155,22 +155,20 @@ class HentaiMama {
             }
         }
 
-        suspend fun extract(server: VideoServer): String {
-            val client = Requests(Utils.httpClient, responseParser = parser)
+        suspend fun extract(server: VideoServer): VideoContainer {
             val doc = client.get(server.url)
 
             doc.document.selectFirst("video>source")?.attr("src")?.let { directSrc ->
-                VideoContainer(
+                return VideoContainer(
                     listOf(
                         Video(null, VideoType.CONTAINER, directSrc, getSize(directSrc))
                     )
                 )
-                return directSrc
             }
 
             // Extract sources from JavaScript
             val unSanitized =
-                doc.text.findBetween("sources: [", "],") ?: return ""
+                doc.text.findBetween("sources: [", "],") ?: return VideoContainer(listOf())
 
             // Sanitize the JSON string
             val sanitizedJson = "[${
@@ -192,8 +190,9 @@ class HentaiMama {
                     Video(null, VideoType.CONTAINER, element.file, getSize(element.file))
             }
 
-            return  videos.find {  it.type == VideoType.M3U8}?.url ?: ""
+            return VideoContainer(videos)
         }
+
         data class ResponseElement(
             val type: String,
             val file: String
@@ -241,12 +240,16 @@ fun main(args: Array<String>) {
     runBlocking {
         val extractor = HentaiMama.HentaiMamaExtractor()
         val parser = HentaiMama()
-        val item = extractor.search("Sc").first()
+        val item = extractor.search("Night").first()
         println(item.link)
         val episodes = parser.loadEpisodes(item.link ?: "", item.extra)
         val videoServers = parser.loadVideoServers(episodes.get(0).link, null)
         extractor.extract(
             videoServers.get(0)
-        ).let { println(it) }
+        ).videos.onEach {
+            println(it.url)
+            println(it.size)
+            println(it.type)
+        }
     }
 }
