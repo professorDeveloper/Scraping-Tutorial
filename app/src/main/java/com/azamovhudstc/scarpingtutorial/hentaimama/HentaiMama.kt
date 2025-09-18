@@ -145,7 +145,7 @@ class HentaiMama {
 
         suspend fun search(query: String): List<ShowResponse> {
             val url = "$hostUrl/?s=${query.replace(" ", "+")}"
-            val document = client.get(url).document
+            val document = Utils.getJsoup(url)
 
             return document.select("div.result-item article").map {
                 val link = it.select("div.details div.title a").attr("href")
@@ -240,7 +240,7 @@ fun main(args: Array<String>) {
     runBlocking {
         val extractor = HentaiMama.HentaiMamaExtractor()
         val parser = HentaiMama()
-        val item = extractor.search("Night").first()
+        val item = extractor.search("Imaizumi").first()
         println(item.link)
         val episodes = parser.loadEpisodes(item.link ?: "", item.extra)
         val videoServers = parser.loadVideoServers(episodes.get(0).link, null)
