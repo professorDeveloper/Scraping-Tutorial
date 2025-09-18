@@ -241,7 +241,7 @@ fun main(args: Array<String>) {
     runBlocking {
         val extractor = HentaiMama.HentaiMamaExtractor()
         val parser = HentaiMama()
-        val item = extractor.search("Imaizumi").first()
+        val item = extractor.search("Sc").first()
         println(item.link)
         val episodes = parser.loadEpisodes(item.link ?: "", item.extra)
         val videoServers = parser.loadVideoServers(episodes.get(0).link, null)
