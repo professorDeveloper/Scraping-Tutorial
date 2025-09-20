@@ -23,7 +23,7 @@ import java.util.regex.Pattern
 class AnimePahe {
     val name = "AnimePahe"
     val saveName = "anime_pahe_hu"
-    private val hostUrl = "https://animepahe.ru/"
+    private val hostUrl = "https://animepahe.si/"
     val malSyncBackupName = "animepahe"
     val isDubAvailableSeparately = false
 
@@ -62,8 +62,8 @@ class AnimePahe {
     }
 
     fun getEpisodeVideo(epId: String, id: String): String {
-        //https://animepahe.ru/play/${id}/${epId}
-        val doc = getJsoup("https://animepahe.ru/play/${id}/${epId}")
+        //https://animepahe.si/play/${id}/${epId}
+        val doc = getJsoup("https://animepahe.si/play/${id}/${epId}")
 
         // Script tegini olish
         val scriptContent = doc.select("script")
@@ -96,9 +96,9 @@ class AnimePahe {
         val requests = Requests(httpClient, responseParser = parser)
 
         // Birinchi sahifani olib, jami sahifalar sonini aniqlash
-        println("https://animepahe.ru/api?m=release&id=$animeLink&sort=episode_asc&page=1")
+        println("https://animepahe.si/api?m=release&id=$animeLink&sort=episode_asc&page=1")
         val totalPages = withContext(Dispatchers.IO) {
-            requests.get("https://animepahe.ru/api?m=release&id=$animeLink&sort=episode_asc&page=1")
+            requests.get("https://animepahe.si/api?m=release&id=$animeLink&sort=episode_asc&page=1")
                 .parsed<EpisodeData>().last_page
         }
 
@@ -106,7 +106,7 @@ class AnimePahe {
         val allPagesData = (1..totalPages!!).map { page ->
             async(Dispatchers.IO) {
                 requests.get(
-                    "https://animepahe.ru/api?m=release&id=$animeLink&sort=episode_asc&page=$page",
+                    "https://animepahe.si/api?m=release&id=$animeLink&sort=episode_asc&page=$page",
                     mapOf(
                         "dnt" to "1",
                         "Cookie" to "\n" +
@@ -146,7 +146,7 @@ class AnimePahe {
     suspend fun extractVideo(url: String) {
         val doc = getJsoup(
             url, mapOf(
-                "Referer" to "https://animepahe.ru/",
+                "Referer" to "https://animepahe.si/",
                 "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
                 "Alt-Used" to "kwik.si",
                 "Host" to "kwik.si",
