@@ -62,7 +62,7 @@ class AnimePahe {
     }
 
     fun getEpisodeVideo(epId: String, id: String): String {
-        //https://animepahe.si/play/${id}/${epId}
+        //https://animepahe.si/play/${id}/${epId}2
         val doc = getJsoup("https://animepahe.si/play/${id}/${epId}")
 
         // Script tegini olish
