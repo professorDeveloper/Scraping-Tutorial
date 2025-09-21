@@ -259,7 +259,7 @@ class AnimePahe {
 
 
     private val packedRegex = Regex("""eval\(function\(p,a,c,k,e,.*\)\)""")
-    fun getPacked(string: String): String? {
+    private fun getPacked(string: String): String? {
         return packedRegex.find(string)?.value
     }
 
