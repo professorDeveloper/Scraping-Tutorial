@@ -15,6 +15,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import java.io.Serializable
 import java.util.regex.Pattern
@@ -61,32 +62,119 @@ class AnimePahe {
         return list
     }
 
-    fun getEpisodeVideo(epId: String, id: String): String {
+    fun getEpisodeVideo(epId: String, id: String): List<VideoOption> {
         //https://animepahe.si/play/${id}/${epId}2
         val doc = getJsoup("https://animepahe.si/play/${id}/${epId}")
+        val data = getVideoOptions(doc)
 
-        // Script tegini olish
-        val scriptContent = doc.select("script")
-            .map { it.html() }
-            .firstOrNull { it.contains("session") && it.contains("provider") && it.contains("url") }
-            ?: ""
-
-        // Regex yordamida qiymatlarni olish
-        val sessionRegex = Pattern.compile("""let\s+session\s*=\s*"([^"]+)"""")
-        val providerRegex = Pattern.compile("""let\s+provider\s*=\s*"([^"]+)"""")
-        val urlRegex = Pattern.compile("""let\s+url\s*=\s*"([^"]+)"""")
-
-        val session =
-            sessionRegex.matcher(scriptContent).let { if (it.find()) it.group(1) else null }
-        val provider =
-            providerRegex.matcher(scriptContent).let { if (it.find()) it.group(1) else null }
-        val url = urlRegex.matcher(scriptContent).let { if (it.find()) it.group(1) else null }
-
-        println("Session: $session")
-        println("Provider: $provider")
-        println("URL: $url")
-        return url ?: ""
+        return data.videoOptions
     }
+
+    private fun getVideoOptions(doc: Document): VideoOptionsData {
+        val videoOptions = mutableListOf<VideoOption>()
+        val downloadOptions = mutableListOf<DownloadOption>()
+
+        // 1. Video player options (kwik linklar)
+        val videoButtons = doc.select("div#resolutionMenu button.dropdown-item")
+        videoButtons.forEach { button ->
+            val kwikUrl = button.attr("data-src")
+            val fansub = button.attr("data-fansub")
+            val resolution = button.attr("data-resolution")
+            val audio = button.attr("data-audio")
+            val isActive = button.hasClass("active")
+
+            // Audio type ni aniqlash
+            val audioType = when (audio) {
+                "jpn" -> AudioType.SUB
+                "eng" -> AudioType.DUB
+                else -> AudioType.SUB
+            }
+
+            // Badge ma'lumotlarini olish
+            val badges = button.select("span.badge").map { it.text() }
+            val quality = badges.find { it.contains("BD") } ?: ""
+
+            videoOptions.add(
+                VideoOption(
+                    kwikUrl = kwikUrl,
+                    fansub = fansub,
+                    resolution = "${resolution}p",
+                    audioType = audioType,
+                    quality = quality,
+                    isActive = isActive,
+                    fullText = button.text()
+                )
+            )
+        }
+
+        // 2. Download options
+        val downloadLinks = doc.select("div#pickDownload a.dropdown-item")
+        downloadLinks.forEach { link ->
+            val downloadUrl = link.attr("href")
+            val fullText = link.text()
+
+            // Matnni parse qilish (masalan: "Nep_Blanc · 720p (83MB) BD eng")
+            val parts = fullText.split("·")
+            if (parts.size >= 2) {
+                val fansub = parts[0].trim()
+                val details = parts[1].trim()
+
+                // Resolution va size ni olish
+                val resolutionRegex = Pattern.compile("(\\d+p)")
+                val sizeRegex = Pattern.compile("\$$(\\d+MB)\$$")
+
+                val resolution = resolutionRegex.matcher(details)
+                    .let { if (it.find()) it.group(1) else "" }
+                val size = sizeRegex.matcher(details)
+                    .let { if (it.find()) it.group(1) else "" }
+
+                // Audio type ni aniqlash (eng badge bor yoki yo'q)
+                val audioType = if (fullText.contains("eng")) AudioType.DUB else AudioType.SUB
+
+                downloadOptions.add(
+                    DownloadOption(
+                        downloadUrl = downloadUrl,
+                        fansub = fansub,
+                        resolution = resolution,
+                        size = size,
+                        audioType = audioType,
+                        fullText = fullText
+                    )
+                )
+            }
+        }
+
+        return VideoOptionsData(videoOptions, downloadOptions)
+    }
+
+    enum class AudioType {
+        SUB, DUB
+    }
+
+    data class VideoOption(
+        val kwikUrl: String,
+        val fansub: String,
+        val resolution: String,
+        val audioType: AudioType,
+        val quality: String,
+        val isActive: Boolean,
+        val fullText: String
+    )
+
+    data class DownloadOption(
+        val downloadUrl: String,
+        val fansub: String,
+        val resolution: String,
+        val size: String,
+        val audioType: AudioType,
+        val fullText: String
+    )
+
+    data class VideoOptionsData(
+        val videoOptions: List<VideoOption>,
+        val downloadOptions: List<DownloadOption>
+    )
+
 
     suspend fun loadEpisodes(
         animeLink: String,
@@ -183,7 +271,7 @@ class AnimePahe {
     fun extractFileUrl(input: String): String? {
         val regex = Regex("https?://\\S+\\.m3u8")
         val matchResult = regex.find(input)
-        return m3u8ToMp4(matchResult?.value ?: "", "file") // Agar topilgan bo'lsa, URL manzilini qaytaradi
+        return matchResult?.value// Agar topilgan bo'lsa, URL manzilini qaytaradi
     }
 
     // https://anime.apex-cloud.workers.dev/?method=episode&session=778deaa9-5f4a-fe91-af6c-13f81bfd45a0&ep=bddc1dbe1d38ef8fe4596bc37627fd801ea63632ba65ea117f3e76f89238d9b4
@@ -191,6 +279,7 @@ class AnimePahe {
         val requests = Requests(baseClient = httpClient, responseParser = parser)
         val getKiwik = requests.get("")
     }
+
     fun m3u8ToMp4(m3u8Url: String, fileName: String): String {
         val uri = java.net.URI(m3u8Url)
 
@@ -208,7 +297,6 @@ class AnimePahe {
             null
         ).toString()
     }
-
 
 
 }
@@ -230,13 +318,13 @@ data class ShowResponse(
 fun main(args: Array<String>) {
     runBlocking {
         val animePahe = AnimePahe()
-        val list = animePahe.search("One Piece")
+        val list = animePahe.search("Your Name")
         println(list[0].link)
         animePahe.loadEpisodes(list[0].link, 1)?.let {
             animePahe.getEpisodeVideo(
-                it.data?.get(11)?.session ?: "", list[0].link
+                it.data?.get(0)?.session ?: "", list[0].link
             ).let {
-                animePahe.extractVideo(url = it)
+                animePahe.extractVideo(url = it[0].kwikUrl)
             }
         }
     }
