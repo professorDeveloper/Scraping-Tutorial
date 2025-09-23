@@ -324,6 +324,7 @@ fun main(args: Array<String>) {
             animePahe.getEpisodeVideo(
                 it.data?.get(0)?.session ?: "", list[0].link
             ).let {
+                println(it)
                 animePahe.extractVideo(url = it[0].kwikUrl)
             }
         }
