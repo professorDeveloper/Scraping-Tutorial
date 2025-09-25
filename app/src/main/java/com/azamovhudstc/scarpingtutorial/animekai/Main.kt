@@ -1,4 +1,3 @@
-import com.azamovhudstc.scarpingtutorial.animekai.M3U8Extractor
 import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
