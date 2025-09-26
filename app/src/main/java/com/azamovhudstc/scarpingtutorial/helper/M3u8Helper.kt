@@ -143,9 +143,6 @@ object M3u8Helper2 {
             // M3u8 can also include different camera angles (parsed.videos) for the same quality
             // but here the default is used
             val bestVideo = if (selectBest) {
-                // Sort by pixels, while this normally is a bad idea if one is -1,
-                // in the m3u8 parsing must contains both or neither, so NO_VALUE => 1
-                // Tie break on averageBitrate
                 variants.maxBy { (it.format.width * it.format.height).toLong() * 1000L + it.format.averageBitrate.toLong() }
             } else {
                 variants.minBy { (it.format.width * it.format.height).toLong() * 1000L + it.format.averageBitrate.toLong() }
@@ -163,9 +160,7 @@ object M3u8Helper2 {
                 depth = depth - 1
             )
         }
-        // This is already a "Media Segments" file
 
-        // Encryption, this is because crunchy uses it
         var encryptionIv = byteArrayOf()
         var encryptionData = byteArrayOf()
 
