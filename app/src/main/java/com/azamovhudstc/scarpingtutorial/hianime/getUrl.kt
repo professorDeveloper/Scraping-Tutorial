@@ -83,7 +83,7 @@ suspend fun getUrl(
         }
 
     } catch (e: Exception) {
-        Log.e("Megacloud", "Xatolik: ${e.message}")
+//        Log.e("Megacloud", "Xatolik: ${e.message}")
     }
 }
 

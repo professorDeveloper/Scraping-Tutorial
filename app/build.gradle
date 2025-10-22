@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlinx-serialization'
+//    id 'com.lagradost.cloudstream3.gradle'
 
 }
 
@@ -58,6 +59,8 @@ implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation("org.json:json:20231013")
     implementation("com.google.code.gson:gson:2.11.0")
+    implementation 'com.github.Blatzar:CloudstreamApi:0.1.1'
+//    cloudstream("com.lagradost:cloudstream3:pre-release")
 
     //and we need FireFox browser because this browser run away debug mode
 }
