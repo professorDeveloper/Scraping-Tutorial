@@ -2,6 +2,7 @@ package com.azamovhudstc.scarpingtutorial.utils
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
+import com.lagradost.nicehttp.addGenericDns
 import okhttp3.FormBody
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -15,9 +16,21 @@ object Utils {
     var httpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
-
+        .addCloudFlareDns()
         .callTimeout(2, TimeUnit.MINUTES)
         .build()
+    fun OkHttpClient.Builder.addCloudFlareDns() = (
+            addGenericDns(
+                "https://cloudflare-dns.com/dns-query",
+                // https://www.cloudflare.com/ips/
+                listOf(
+                    "1.1.1.1",
+                    "1.0.0.1",
+                    "2606:4700:4700::1111",
+                    "2606:4700:4700::1001"
+                )
+            ))
+
 
     fun getAsilMedia(
         host: String? = null,
