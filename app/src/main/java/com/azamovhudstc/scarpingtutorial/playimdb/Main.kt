@@ -202,14 +202,17 @@ fun main(args: Array<String>) {
 //    }
 
         //Series example
-        val id = "tt2861424"
+        val id = "119051"
         getEpisodes(id).onSuccess {
             val list = it
-            convertRcptProctor(list[0].iframeUrl).let {
-                extractDirectM3u8(it).let {
-                    println(it)
-                }
+            list.forEach {
+                println(it)
             }
+        //            convertRcptProctor(list[0].iframeUrl).let {
+//                extractDirectM3u8(it).let {
+//                    println(it)
+//                }
+//            }
         }
     }
 }
