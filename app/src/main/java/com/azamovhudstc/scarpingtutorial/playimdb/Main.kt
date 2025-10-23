@@ -59,7 +59,7 @@ fun getEpisodes(imdbId: String): Result<List<Episode>> = runCatching {
         episodes.add(
             Episode(
                 season = 0,
-                episode = 0,
+                episode = 1,
                 title = pageTitle,
                 iframeUrl = fixedUrl
             )
@@ -183,8 +183,26 @@ suspend fun extractDirectM3u8(iframeUrl: String): String {
 }
 
 fun main(args: Array<String>) {
+    // Movie example using
     runBlocking {
-        val id = "tt21909764"
+//        val id = "tt33511103"
+//        getEpisodes(id).onSuccess {
+//            val list = it
+//
+//            convertRcptProctor(list[0].iframeUrl).let {
+//                extractDirectM3u8(it).let {
+//                    println(it)
+//                }
+//            }
+////            extractSeriesIframe(list[0].iframeUrl)?.let {
+////                convertRcptProctor(it).let {
+////                }
+////            }
+//        }
+//    }
+
+        //Series example
+        val id = "tt2861424"
         getEpisodes(id).onSuccess {
             val list = it
             convertRcptProctor(list[0].iframeUrl).let {
@@ -192,12 +210,10 @@ fun main(args: Array<String>) {
                     println(it)
                 }
             }
-//            extractSeriesIframe(list[0].iframeUrl)?.let {
-//                convertRcptProctor(it).let {
-//                }
-//            }
         }
     }
 }
+
+
 
 
