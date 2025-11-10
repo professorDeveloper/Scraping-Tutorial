@@ -1,12 +1,21 @@
 package com.azamovhudstc.scarpingtutorial.playimdb
 
+import android.util.Log
+import com.azamovhudstc.scarpingtutorial.themoviedb.Backdrop
 import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
+import com.azamovhudstc.scarpingtutorial.utils.parser
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.lagradost.nicehttp.Requests
+import com.saikou.sozo_tv.data.model.SeasonResponse
+import com.saikou.sozo_tv.data.model.SubtitleItem
+import com.saikou.sozo_tv.data.model.Subtitles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -71,7 +80,7 @@ fun getEpisodes(imdbId: String): Result<List<Episode>> = runCatching {
 
 fun extractSeriesIframe(link: String): String? {
     val doc: Document = getJsoup(link)
-    println(doc)
+//    println(doc)
     val iframeSrc = doc.selectFirst("iframe#player_iframe")?.attr("src")
 
     if (iframeSrc != null) {
@@ -125,7 +134,7 @@ suspend fun convertRcptProctor(iframeUrl: String): String = withContext(Dispatch
         .header("sec-fetch-user", "?1")
         .header("upgrade-insecure-requests", "1")
         .header(
-            "user-agent",
+            "User-agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
         )
         .ignoreHttpErrors(true)
@@ -182,41 +191,88 @@ suspend fun extractDirectM3u8(iframeUrl: String): String {
 
 }
 
-fun main(args: Array<String>) {
-    // Movie example using
-    runBlocking {
-//        val id = "tt33511103"
-//        getEpisodes(id).onSuccess {
-//            val list = it
-//
-//            convertRcptProctor(list[0].iframeUrl).let {
-//                extractDirectM3u8(it).let {
-//                    println(it)
-//                }
-//            }
-////            extractSeriesIframe(list[0].iframeUrl)?.let {
-////                convertRcptProctor(it).let {
-////                }
-////            }
-//        }
-//    }
+suspend fun getDetails(season: Int, tmdbId: Int): ArrayList<Backdrop> {
+    val niceHttp = Requests(baseClient = httpClient, responseParser = parser)
+    val request = niceHttp.get(
+        "https://jumpfreedom.com/3/tv/${tmdbId}/season/${season}?language=en-US",
+        headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+        )
+    )
+    if (request.isSuccessful) {
 
-        //Series example
-        val id = "119051"
-        getEpisodes(id).onSuccess {
-            val list = it
-            list.forEach {
-                println(it)
+        val body = request.body.string()
+        val data = Gson().fromJson(body, SeasonResponse::class.java)
+        val stillPaths = data.episodes.mapNotNull { it.stillPath }
+
+
+        return stillPaths.map { Backdrop("https://image.tmdb.org/t/p/w500/${it.toString()}") } as ArrayList<Backdrop>
+    } else {
+        println(request.body.string())
+        Log.d("GGG", "getDetails:fuck  life ")
+    }
+    return ArrayList()
+}
+
+suspend fun getSubTitleList(tmdbId: Int, season: Int, episode: Int) {
+    val niceHttp = Requests(baseClient = httpClient, responseParser = parser)
+
+    val request = niceHttp.get(
+        "https://sub.wyzie.ru/search?id=${tmdbId}&season=${season}&episode=${episode}",
+        headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+        )
+    )
+
+    if (request.isSuccessful) {
+        val body = request.body.string()
+        try {
+            val listType = object : TypeToken<List<SubtitleItem>>() {}.type
+            val data: List<SubtitleItem> = Gson().fromJson(body, listType)
+
+            if (data.isNotEmpty()) {
+                data.forEach {
+                    println("${it.lang} - ${it.url}")
+                }
             }
-        //            convertRcptProctor(list[0].iframeUrl).let {
-//                extractDirectM3u8(it).let {
-//                    println(it)
-//                }
-//            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
 
 
+fun main(args: Array<String>) {
+    //Series example using
+    runBlocking {
+        val id = "tt33511103"
+        getEpisodes(id).onSuccess {
+            val list = it
+            println(list[0].iframeUrl)
+            convertRcptProctor(list[0].iframeUrl).let {
+                extractDirectM3u8(it).let {
+                    println(it)
+                }
+            }
+//            extractSeriesIframe(list[0].iframeUrl)?.let {
+//                convertRcptProctor(it).let {
+//                }
+//            }
+        }
+    }
 
-
+    //Series example
+    val id = "119051"
+    getEpisodes(id).onSuccess {
+        val list = it
+        list.forEach {
+            println(it)
+        }
+        //            convertRcptProctor(list[0].iframeUrl).let {
+//                extractDirectM3u8(it).let {
+//                    println(it)
+//                }
+//            }
+    }
+}
