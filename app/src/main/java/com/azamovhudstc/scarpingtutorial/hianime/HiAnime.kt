@@ -1,15 +1,8 @@
 package com.azamovhudstc.scarpingtutorial.hianime
 
 import com.azamovhudstc.scarpingtutorial.utils.Utils
-import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.google.gson.Gson
-import com.lagradost.nicehttp.Requests
-import kotlinx.coroutines.runBlocking
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
 import org.jsoup.Jsoup
-import org.slf4j.helpers.Util
 import java.net.URI
 
 data class HiAnime(
@@ -30,28 +23,21 @@ data class Episode(
     val link: String
 )
 
-fun main(args: Array<String>) {
-    runBlocking {
-        val hiAnime = HiAnimeSource()
-        val item = hiAnime.searchAnime("My Dress-Up Darling Season 2").forEach {
-            println(it)
-        }
-        hiAnime.getEpisodeListById(19794).forEach {
-            println(it.link)
-        }
-    }
-}
-
 data class EpisodeResponse(
     val html: String
 )
 
 class HiAnimeSource {
-    private val BASE_URL = "https://hianime.bz/"
+
+    private val BASE_URL = "https://hianime.bz"
+
+    /**
+     * SEARCH ANIME
+     */
     fun searchAnime(keyword: String): List<HiAnime> {
         val result = mutableListOf<HiAnime>()
 
-        try {
+        return try {
             val doc = Utils.getJsoup("$BASE_URL/search?keyword=$keyword")
 
             val items = doc.select("div.flw-item")
@@ -61,20 +47,17 @@ class HiAnimeSource {
                 val detail = item.selectFirst(".film-detail")
 
                 val title = detail?.selectFirst(".film-name a")?.attr("title") ?: continue
-                val link = BASE_URL + (detail?.selectFirst(".film-name a")?.attr("href") ?: "")
+                val link = BASE_URL + (detail.selectFirst(".film-name a")?.attr("href") ?: "")
                 val imageUrl = poster?.selectFirst("img")?.attr("data-src") ?: ""
                 val type = detail?.selectFirst(".fd-infor .fdi-item")?.text() ?: ""
                 val duration = detail?.selectFirst(".fdi-duration")?.text() ?: ""
 
-                val subCountText = poster?.selectFirst(".tick-item.tick-sub")?.ownText()
-                val dubCountText = poster?.selectFirst(".tick-item.tick-dub")?.ownText()
-
-                val subCount = subCountText?.toIntOrNull()
-                val dubCount = dubCountText?.toIntOrNull()
+                val subCount = poster?.selectFirst(".tick-item.tick-sub")?.ownText()?.toIntOrNull()
+                val dubCount = poster?.selectFirst(".tick-item.tick-dub")?.ownText()?.toIntOrNull()
 
                 result.add(
                     HiAnime(
-                        id = link.extractId() ?: 0,
+                        id = link.extractAnimeId() ?: 0,
                         title = title,
                         imageUrl = imageUrl,
                         type = type,
@@ -85,26 +68,23 @@ class HiAnimeSource {
                     )
                 )
             }
+
+            result
         } catch (e: Exception) {
             e.printStackTrace()
+            emptyList()
         }
-
-        return result
     }
 
-
+    /**
+     * GET EPISODE LIST BY ANIME ID
+     */
     suspend fun getEpisodeListById(id: Int): List<Episode> {
         val episodes = mutableListOf<Episode>()
 
-        try {
-            val client = Requests(
-                baseClient = Utils.httpClient,
-                responseParser = parser
-            )
-            val response = client.get("$BASE_URL/ajax/v2/episode/list/$id")
-            val body = response.body.string()
-
-            val episodeResponse = Gson().fromJson(body, EpisodeResponse::class.java)
+        return try {
+            val json = Utils.get("$BASE_URL/ajax/v2/episode/list/$id")
+            val episodeResponse = Gson().fromJson(json, EpisodeResponse::class.java)
 
             val doc = Jsoup.parse(episodeResponse.html)
             val items = doc.select("a.ssl-item.ep-item")
@@ -124,19 +104,26 @@ class HiAnimeSource {
                     )
                 )
             }
+
+            episodes
         } catch (e: Exception) {
             e.printStackTrace()
+            emptyList()
         }
-
-        return episodes
     }
-//    //https://megaplay.buzz/stream/s-2/136197/dub
-//    fun getM3u8DubLink(url: String): String {
-//        val id = url.extractEpId() ?: -1
-//        val request =Utils.getJsoup("https://megaplay.buzz/stream/s-2/$id/dub")
-//
-////    }
 
+
+    /**
+     * Extract anime ID from URLs like
+     * https://hianime.bz/anime/one-piece-quest-17184
+     */
+    private fun String.extractAnimeId(): Int? {
+        return Regex("-(\\d+)").find(this)?.groupValues?.get(1)?.toIntOrNull()
+    }
+
+    /**
+     * Extract episode ID from URL params like ?ep=134
+     */
     fun String.extractEpId(): Int? {
         return try {
             val uri = URI(this)
@@ -150,10 +137,4 @@ class HiAnimeSource {
             null
         }
     }
-
-    fun String.extractId(): Int? {
-        val regex = Regex("-(\\d+)")
-        return regex.find(this)?.groupValues?.get(1)?.toIntOrNull()
-    }
-
 }

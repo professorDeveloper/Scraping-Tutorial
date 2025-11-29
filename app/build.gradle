@@ -53,6 +53,7 @@ implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.squareup.okhttp3:okhttp:3.5.0'
     implementation 'org.java-websocket:Java-WebSocket:1.4.0'
+    implementation("com.squareup.okhttp3:okhttp-brotli:5.0.0-alpha.14")
 
     implementation "dev.datlag.jsunpacker:jsunpacker:1.0.1"
     implementation 'io.apisense:rhino-android:1.0'

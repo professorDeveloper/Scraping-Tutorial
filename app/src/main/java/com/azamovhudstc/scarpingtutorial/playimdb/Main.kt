@@ -2,7 +2,6 @@ package com.azamovhudstc.scarpingtutorial.playimdb
 
 import android.util.Log
 import com.azamovhudstc.scarpingtutorial.themoviedb.Backdrop
-import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.azamovhudstc.scarpingtutorial.utils.Utils.getJsoup
 import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
 import com.azamovhudstc.scarpingtutorial.utils.parser
@@ -11,21 +10,15 @@ import com.google.gson.reflect.TypeToken
 import com.lagradost.nicehttp.Requests
 import com.saikou.sozo_tv.data.model.SeasonResponse
 import com.saikou.sozo_tv.data.model.SubtitleItem
-import com.saikou.sozo_tv.data.model.Subtitles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import java.util.regex.Pattern
 
 data class Episode(
-    val season: Int,
-    val episode: Int,
-    val title: String,
-    val iframeUrl: String
+    val season: Int, val episode: Int, val title: String, val iframeUrl: String
 )
 
 fun getEpisodes(imdbId: String): Result<List<Episode>> = runCatching {
@@ -52,8 +45,7 @@ fun getEpisodes(imdbId: String): Result<List<Episode>> = runCatching {
             )
         }
     } else {
-        val iframe = doc.selectFirst("iframe")
-            ?: throw Exception("Iframe not found")
+        val iframe = doc.selectFirst("iframe") ?: throw Exception("Iframe not found")
 
         val iframeSrc = iframe.attr("src").trim()
         val fixedUrl = when {
@@ -67,10 +59,7 @@ fun getEpisodes(imdbId: String): Result<List<Episode>> = runCatching {
 
         episodes.add(
             Episode(
-                season = 0,
-                episode = 1,
-                title = pageTitle,
-                iframeUrl = fixedUrl
+                season = 0, episode = 1, title = pageTitle, iframeUrl = fixedUrl
             )
         )
     }
@@ -112,34 +101,21 @@ val headers = mapOf(
 
 suspend fun convertRcptProctor(iframeUrl: String): String = withContext(Dispatchers.IO) {
 
-    val response = Jsoup.connect(iframeUrl)
-        .method(Connection.Method.GET)
-        .header(
-            "accept",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
-        )
-        .header("accept-language", "en-US,en;q=0.9,uz-UZ;q=0.8,uz;q=0.7")
-        .header("cache-control", "max-age=0")
-        .header("dnt", "1")
-        .header("priority", "u=0, i")
+    val response = Jsoup.connect(iframeUrl).method(Connection.Method.GET).header(
+        "accept",
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+    ).header("accept-language", "en-US,en;q=0.9,uz-UZ;q=0.8,uz;q=0.7")
+        .header("cache-control", "max-age=0").header("dnt", "1").header("priority", "u=0, i")
         .header(
             "sec-ch-ua",
             "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\""
-        )
-        .header("sec-ch-ua-mobile", "?0")
-        .header("sec-ch-ua-platform", "\"Windows\"")
-        .header("sec-fetch-dest", "document")
-        .header("sec-fetch-mode", "navigate")
-        .header("sec-fetch-site", "none")
-        .header("sec-fetch-user", "?1")
-        .header("upgrade-insecure-requests", "1")
-        .header(
+        ).header("sec-ch-ua-mobile", "?0").header("sec-ch-ua-platform", "\"Windows\"")
+        .header("sec-fetch-dest", "document").header("sec-fetch-mode", "navigate")
+        .header("sec-fetch-site", "none").header("sec-fetch-user", "?1")
+        .header("upgrade-insecure-requests", "1").header(
             "User-agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
-        )
-        .ignoreHttpErrors(true)
-        .ignoreContentType(true)
-        .execute()
+        ).ignoreHttpErrors(true).ignoreContentType(true).execute()
     val document = Jsoup.parse(response.body())
     val scripts = document.select("script")
 
@@ -157,45 +133,55 @@ suspend fun convertRcptProctor(iframeUrl: String): String = withContext(Dispatch
 
 }
 
+suspend fun extractDirectM3u8(iframeUrl: String, fckURl: String): String {
+    try {
+        val response = Jsoup.connect(iframeUrl)
+            .method(Connection.Method.GET)
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0"
+            )
+            .header(
+                "Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+            )
+            .header("Accept-Language", "en-US,en;q=0.5")
+            .header("Referer", fckURl) // bu muhim — iframe parent
+            .header("Host", "cloudnestra.com")
+            .header("Alt-Used", "cloudnestra.com")
+            .header("Connection", "keep-alive")
+            .header("Upgrade-Insecure-Requests", "1")
+            .header("Sec-Fetch-Dest", "iframe")
+            .header("Sec-Fetch-Mode", "navigate")
+            .header("Sec-Fetch-Site", "same-origin")
+            .header("TE", "trailers")
+            .ignoreContentType(true)
+            .timeout(15000)
+            .execute()
 
-suspend fun extractDirectM3u8(iframeUrl: String): String {
-    val response = Jsoup.connect(iframeUrl)
-        .method(Connection.Method.GET)
-        .header(
-            "accept",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
-        )
-        .header("accept-language", "en-US,en;q=0.9,uz-UZ;q=0.8,uz;q=0.7")
-        .header("cache-control", "max-age=0")
-        .header("dnt", "1")
-        .header(
-            "user-agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari"
-        )
-        .ignoreContentType(true)
-        .timeout(15000)
-        .execute()
+        val html = response.body()
+        println(html)
+        val regex = Regex("""https?://[^\s'"]+\.m3u8""")
+        val match = regex.find(html)
 
-    val html = response.body()
+        return if (match != null) {
+            val m3u8Url = match.value
+            m3u8Url
+        } else {
+            "empty"
+        }
 
-    // Regex orqali .m3u8 linkni topamiz
-    val regex = Regex("""https?://[^\s'"]+\.m3u8""")
-    val match = regex.find(html)
-
-    return if (match != null) {
-        val m3u8Url = match.value
-        m3u8Url
-    } else {
-        "empty"
+    } catch (e: Exception) {
+        println(e)
+        return ""
     }
-
 }
+
 
 suspend fun getDetails(season: Int, tmdbId: Int): ArrayList<Backdrop> {
     val niceHttp = Requests(baseClient = httpClient, responseParser = parser)
     val request = niceHttp.get(
-        "https://jumpfreedom.com/3/tv/${tmdbId}/season/${season}?language=en-US",
-        headers = mapOf(
+        "https://jumpfreedom.com/3/tv/${tmdbId}/season/${season}?language=en-US", headers = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
         )
     )
@@ -251,28 +237,25 @@ fun main(args: Array<String>) {
             val list = it
             println(list[0].iframeUrl)
             convertRcptProctor(list[0].iframeUrl).let {
-                extractDirectM3u8(it).let {
+                extractDirectM3u8(it, list[0].iframeUrl).let {
                     println(it)
                 }
             }
-//            extractSeriesIframe(list[0].iframeUrl)?.let {
-//                convertRcptProctor(it).let {
-//                }
-//            }
+
         }
     }
 
     //Series example
-    val id = "119051"
-    getEpisodes(id).onSuccess {
-        val list = it
-        list.forEach {
-            println(it)
-        }
-        //            convertRcptProctor(list[0].iframeUrl).let {
+//    val id = "119051"
+//    getEpisodes(id).onSuccess {
+//        val list = it
+//        list.forEach {
+//            println(it)
+//        }
+    //            convertRcptProctor(list[0].iframeUrl).let {
 //                extractDirectM3u8(it).let {
 //                    println(it)
 //                }
 //            }
-    }
 }
+
