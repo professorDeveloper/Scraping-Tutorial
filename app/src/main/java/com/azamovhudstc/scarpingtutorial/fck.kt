@@ -1,10 +1,10 @@
-package com.azamovhudstc.scarpingtutorial.ktor_http
+package com.azamovhudstc.scarpingtutorial
 
 import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.lagradost.nicehttp.Requests
 import kotlinx.coroutines.runBlocking
 
-fun main() {
+fun main(args: Array<String>) {
     runBlocking {
 
         val requests = Requests(baseClient = Utils.httpClient)

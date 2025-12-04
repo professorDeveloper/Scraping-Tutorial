@@ -13,6 +13,9 @@ import kotlinx.coroutines.runBlocking
 
 
 
+
+
+
 private val mainUrl = "https://yugenanime.tv" //GET MAIN URL
 private lateinit var epList: MutableList<String>
 suspend fun main() {

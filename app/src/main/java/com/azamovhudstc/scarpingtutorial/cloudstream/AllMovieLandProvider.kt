@@ -308,6 +308,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
 
     data class Getfile(
         @JsonProperty("file") var file: String,
+
         @JsonProperty("hls") var hls: Int?,
         @JsonProperty("id") var id: String?,
         @JsonProperty("cuid") var cuid: String?,

@@ -1,4 +1,4 @@
-package com.azamovhudstc.scarpingtutorial.ktor_http
+package com.azamovhudstc.scarpingtutorial.dos
 
 import com.azamovhudstc.scarpingtutorial.utils.Utils
 import com.lagradost.nicehttp.Requests
