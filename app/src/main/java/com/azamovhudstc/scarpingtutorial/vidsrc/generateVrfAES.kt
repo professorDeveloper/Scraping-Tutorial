@@ -3,6 +3,7 @@ package com.azamovhudstc.scarpingtutorial.vidsrc
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.lagradost.cloudstream3.base64Encode
 import java.security.MessageDigest
 import java.util.Base64
 import javax.crypto.Cipher
@@ -21,6 +22,18 @@ fun base64Encode(input: String): String {
 
 fun main(args: Array<String>) {
     println(base64Decode("aGU1aWRnb2JJUV8=").decodeToString())
+}
+ fun generateVidsrcVrf(movieId: String, userId: String): String {
+    val keyBytes = MessageDigest.getInstance("SHA-256").digest(userId.toByteArray())
+    val key = SecretKeySpec(keyBytes, "AES")
+    val iv = IvParameterSpec(ByteArray(16))
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    cipher.init(Cipher.ENCRYPT_MODE, key, iv)
+    val plaintext = movieId.toByteArray()
+    val ciphertext = cipher.doFinal(plaintext)
+    val encoded = base64Encode(ciphertext)
+    val urlSafe = encoded.replace('+', '-').replace('/', '_').replace("=", "")
+    return urlSafe
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

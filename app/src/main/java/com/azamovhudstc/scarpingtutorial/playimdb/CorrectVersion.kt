@@ -33,6 +33,7 @@ private suspend fun extractAndDecryptSource(
     referer: String
 ): List<Pair<String, String>>? {
     println(prorcpUrl)
+    println(referer)
     val responseText = app.get(prorcpUrl, referer = referer).text
     val playerJsRegex = Regex("""Playerjs\(\{.*?file:"(.*?)".*?\}\)""")
     val temp = playerJsRegex.find(responseText)?.groupValues?.get(1)
@@ -57,7 +58,6 @@ private suspend fun extractAndDecryptSource(
         "v2" to "cloudnestra.com",
         "v3" to "thepixelpioneer.com",
         "v4" to "putgate.org",
-        "v5" to ""
     )
     val placeholderRegex = "\\{(v\\d+)\\}".toRegex()
     val mirrors: List<Pair<String, String>> = decrypted
@@ -66,10 +66,8 @@ private suspend fun extractAndDecryptSource(
         .filter { it.startsWith("http") }
         .map { rawUrl ->
             val match = placeholderRegex.find(rawUrl)
-            val version = match?.groupValues?.get(1) ?: ""   // v1, v2, v3 etc or "" if none
+            val version = match?.groupValues?.get(1) ?: ""
             val domain = vSubs[version] ?: ""
-
-            // replace {vX} with actual domain
             val finalUrl = if (domain.isNotEmpty()) {
                 placeholderRegex.replace(rawUrl) { domain }
             } else {
@@ -95,19 +93,18 @@ suspend fun invokeVidSrcXyz(
     }
     val iframeUrl = extractIframeUrl(url) ?: return ""
     val prorcpUrl = extractProrcpUrl(iframeUrl) ?: "Not Found 2"
-
     val decryptedSource = extractAndDecryptSource(prorcpUrl, iframeUrl) ?: return ""
     decryptedSource.forEach {
-        println(it.second)
+        println("Link:${it.second}")
     }
     return decryptedSource.get(0).second
 
 }
 
 fun main(args: Array<String>) {
-   runBlocking {
-       invokeVidSrcXyz(id = "tt33511103",).let {
-           println(it)
-       }
-   }
+    runBlocking {
+        invokeVidSrcXyz(id = "tt26443597").let {
+            println(it)
+        }
+    }
 }
