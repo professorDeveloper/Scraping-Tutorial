@@ -16,7 +16,7 @@ private suspend fun extractIframeUrl(url: String): String? {
     ).takeIf { it.isNotEmpty() }
 }
 
-private fun getBaseUrl(url: String): String {
+fun getBaseUrl(url: String): String {
     return URI(url).let { "${it.scheme}://${it.host}" }
 }
 
@@ -32,6 +32,7 @@ private suspend fun extractAndDecryptSource(
     prorcpUrl: String,
     referer: String
 ): List<Pair<String, String>>? {
+    println(prorcpUrl)
     val responseText = app.get(prorcpUrl, referer = referer).text
     val playerJsRegex = Regex("""Playerjs\(\{.*?file:"(.*?)".*?\}\)""")
     val temp = playerJsRegex.find(responseText)?.groupValues?.get(1)
@@ -81,37 +82,32 @@ private suspend fun extractAndDecryptSource(
     return mirrors.ifEmpty { null }
 }
 
-val Vidsrcxyz = "https://vidsrc-embed.su"
+const val Vidsrcxyz = "https://vidsrc-embed.su"
 suspend fun invokeVidSrcXyz(
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
-) {
+): String {
     val url = if (season == null) {
         "$Vidsrcxyz/embed/movie?imdb=$id"
     } else {
         "$Vidsrcxyz/embed/tv?imdb=$id&season=$season&episode=$episode"
     }
-    val iframeUrl = extractIframeUrl(url) ?: return
+    val iframeUrl = extractIframeUrl(url) ?: return ""
     val prorcpUrl = extractProrcpUrl(iframeUrl) ?: "Not Found 2"
 
-    val decryptedSource = extractAndDecryptSource(prorcpUrl, iframeUrl) ?: return
-
-    val referer = prorcpUrl.substringBefore("rcp")
-    decryptedSource.forEach { (version, url) ->
-        println(url)
+    val decryptedSource = extractAndDecryptSource(prorcpUrl, iframeUrl) ?: return ""
+    decryptedSource.forEach {
+        println(it.second)
     }
+    return decryptedSource.get(0).second
 
 }
 
 fun main(args: Array<String>) {
-    getEpisodes("tt0944947").let {
-
-        runBlocking {
-            invokeVidSrcXyz(id = "tt0944947", 1, 1) {
-
-            }
-        }
-    }
+   runBlocking {
+       invokeVidSrcXyz(id = "tt33511103",).let {
+           println(it)
+       }
+   }
 }

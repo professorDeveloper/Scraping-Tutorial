@@ -7,15 +7,18 @@ import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
 import com.azamovhudstc.scarpingtutorial.utils.parser
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.lagradost.cloudstream3.app
 import com.lagradost.nicehttp.Requests
 import com.saikou.sozo_tv.data.model.SeasonResponse
 import com.saikou.sozo_tv.data.model.SubtitleItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.net.SocketTimeoutException
 
 data class Episode(
     val season: Int, val episode: Int, val title: String, val iframeUrl: String
@@ -132,7 +135,6 @@ suspend fun convertRcptProctor(iframeUrl: String): String = withContext(Dispatch
     return@withContext "https://cloudnestra.com/$prorcpUrl" ?: ""
 
 }
-
 suspend fun extractDirectM3u8(iframeUrl: String, fckURl: String): String {
     try {
         val response = Jsoup.connect(iframeUrl)

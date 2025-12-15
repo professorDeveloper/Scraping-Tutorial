@@ -10,7 +10,8 @@ fun main() {
     runBlocking {
 
         vidsrc.invokeVidsrccc(
-            id = 550        ) {
+            id = 550
+        ) {
             println(it.name)
             println(it.source)
             println(it.url)

@@ -1,8 +1,14 @@
 package com.azamovhudstc.scarpingtutorial.helper
 
-import com.azamovhudstc.scarpingtutorial.utils.Utils.httpClient
-import com.azamovhudstc.scarpingtutorial.utils.parser
-import com.lagradost.nicehttp.Requests
+import android.util.Log
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -10,7 +16,20 @@ import kotlin.math.pow
 
 /** backwards api surface */
 class M3u8Helper {
+
+
+
     companion object {
+        suspend fun generateM3u8(
+            source: String,
+            streamUrl: String,
+            referer: String,
+            quality: Int? = null,
+            headers: Map<String, String> = mapOf(),
+            name: String = source
+        ): List<ExtractorLink> {
+            return M3u8Helper2.generateM3u8(source, streamUrl, referer, quality, headers, name)
+        }
     }
 
 
@@ -20,12 +39,63 @@ class M3u8Helper {
         val headers: Map<String, String> = mapOf()
     )
 
+    suspend fun m3u8Generation(m3u8: M3u8Stream, returnThis: Boolean? = true): List<M3u8Stream> {
+        return M3u8Helper2.m3u8Generation(m3u8, returnThis ?: true)
+    }
 }
 
 
 object M3u8Helper2 {
     private val TAG = "M3u8Helper"
 
+    suspend fun newExtractorLink(
+        source: String,
+        name: String,
+        url: String,
+        type: ExtractorLinkType? = null,
+        initializer: suspend ExtractorLink.() -> Unit = { }
+    ): ExtractorLink {
+
+        @Suppress("DEPRECATION_ERROR")
+        val builder =
+            ExtractorLink(
+                source = source,
+                name = name,
+                url = url,
+                quality = 0,
+                referer = "",
+                type = type ?: INFER_TYPE
+            )
+
+        builder.initializer()
+        return builder
+    }
+    suspend fun generateM3u8(
+        source: String,
+        streamUrl: String,
+        referer: String,
+        quality: Int? = null,
+        headers: Map<String, String> = mapOf(),
+        name: String = source
+    ): List<ExtractorLink> {
+        return m3u8Generation(
+            M3u8Helper.M3u8Stream(
+                streamUrl = streamUrl,
+                quality = quality,
+                headers = headers,
+            ), true
+        )
+            .map { stream ->
+                newExtractorLink(
+                    source,
+                    name = name,
+                    stream.streamUrl,
+                    type = ExtractorLinkType.M3U8
+                ) {
+
+                }
+            }
+    }
 
     private val ENCRYPTION_DETECTION_REGEX = Regex("#EXT-X-KEY:METHOD=([^,]+),")
     private val ENCRYPTION_URL_IV_REGEX =
@@ -79,6 +149,55 @@ object M3u8Helper2 {
         return !url.startsWith("https://") && !url.startsWith("http://")
     }
 
+    @Throws
+    suspend fun m3u8Generation(
+        m3u8: M3u8Helper.M3u8Stream,
+        returnThis: Boolean = true
+    ): List<M3u8Helper.M3u8Stream> {
+        val list = mutableListOf<M3u8Helper.M3u8Stream>()
+        val response = app.get(m3u8.streamUrl, headers = m3u8.headers, verify = false).text
+        val parsed = HlsPlaylistParser.parse(
+            m3u8.streamUrl,
+            response,
+        )
+
+        var anyFound = false
+        if (parsed != null) {
+            for (video in parsed.variants) {
+                // The m3u8 should not be split it that causes a loss of audio, however this can not be done reliably
+                // Therefore that should be figured out on the extension level, so only "trick play" is checked for
+                if (video.isTrickPlay()) {
+                    //println("Denied m3u8Generation, isTrickPlay = ${video.isTrickPlay()} containsAudio = ${video.containsAudio()}, codec = ${video.format.codecs}, url = ${video.url}")
+                    continue
+                }
+
+                anyFound = true
+                val quality = video.format.height
+                list.add(
+                    M3u8Helper.M3u8Stream(
+                        streamUrl = video.url.toString(),
+                        quality = if (quality > 0) quality else null,
+                        headers = m3u8.headers
+                    )
+                )
+            }
+        }
+
+        // If it is not a "Master Playlist", or if it does not contain any playable "Media Playlist" or if it should return itself
+        if (parsed == null || !anyFound || returnThis) {
+            // Only include it if is a "Media Playlist" (any TS files are found), or if it is a "Master Playlist" (parsing is non null)
+            if (parsed != null || TS_EXTENSION_REGEX.containsMatchIn(response)) {
+                list += m3u8
+            } else {
+                Log.i(
+                    TAG,
+                    "M3u8 Playlist is not a \"Master Playlist\" nor a \"Media Playlist\". Removing this link as it is invalid and will not open in player: ${m3u8.streamUrl}"
+                )
+            }
+        }
+
+        return list
+    }
 
     data class TsLink(
         val url: String,
@@ -96,7 +215,63 @@ object M3u8Helper2 {
 
         val size get() = allTsLinks.size
 
+        suspend fun resolveLinkWhileSafe(
+            index: Int,
+            tries: Int = 3,
+            failDelay: Long = 3000,
+            condition: (() -> Boolean)
+        ): ByteArray? {
+            for (i in 0 until tries) {
+                if (!condition()) return null
 
+                try {
+                    val out = resolveLink(index)
+                    return if (condition()) out else null
+                } catch (e: IllegalArgumentException) {
+                    return null
+                } catch (e: CancellationException) {
+                    return null
+                } catch (t: Throwable) {
+                    delay(failDelay)
+                }
+            }
+            return null
+        }
+
+        suspend fun resolveLinkSafe(
+            index: Int,
+            tries: Int = 3,
+            failDelay: Long = 3000
+        ): ByteArray? {
+            for (i in 0 until tries) {
+                try {
+                    return resolveLink(index)
+                } catch (e: IllegalArgumentException) {
+                    return null
+                } catch (e: CancellationException) {
+                    return null
+                } catch (t: Throwable) {
+                    delay(failDelay)
+                }
+            }
+            return null
+        }
+
+        @Throws
+        suspend fun resolveLink(index: Int): ByteArray {
+            if (index < 0 || index >= size) throw IllegalArgumentException("index must be in the bounds of the ts")
+            val ts = allTsLinks[index]
+
+            val tsResponse = app.get(ts.url, headers = headers, verify = false)
+            val tsData = tsResponse.body.bytes()
+            if (tsData.isEmpty()) throw ErrorLoadingException("no data")
+
+            return if (isEncrypted) {
+                getDecrypted(encryptionData, tsData, encryptionIv, index)
+            } else {
+                tsData
+            }
+        }
     }
 
     @Throws
@@ -114,11 +289,12 @@ object M3u8Helper2 {
             throw IllegalArgumentException()
         }
 
-        val playlistResponse = Requests(baseClient = httpClient, responseParser = parser).get(
-            playlistStream.streamUrl,
-            headers = playlistStream.headers,
-            verify = false
-        ).text
+        val playlistResponse =
+            app.get(
+                playlistStream.streamUrl,
+                headers = playlistStream.headers,
+                verify = false
+            ).text
 
         val parsed = HlsPlaylistParser.parse(playlistStream.streamUrl, playlistResponse)
         if (parsed != null) {
@@ -143,6 +319,9 @@ object M3u8Helper2 {
             // M3u8 can also include different camera angles (parsed.videos) for the same quality
             // but here the default is used
             val bestVideo = if (selectBest) {
+                // Sort by pixels, while this normally is a bad idea if one is -1,
+                // in the m3u8 parsing must contains both or neither, so NO_VALUE => 1
+                // Tie break on averageBitrate
                 variants.maxBy { (it.format.width * it.format.height).toLong() * 1000L + it.format.averageBitrate.toLong() }
             } else {
                 variants.minBy { (it.format.width * it.format.height).toLong() * 1000L + it.format.averageBitrate.toLong() }
@@ -160,7 +339,9 @@ object M3u8Helper2 {
                 depth = depth - 1
             )
         }
+        // This is already a "Media Segments" file
 
+        // Encryption, this is because crunchy uses it
         var encryptionIv = byteArrayOf()
         var encryptionData = byteArrayOf()
 
@@ -177,11 +358,7 @@ object M3u8Helper2 {
 
             encryptionIv = match[3].toByteArray()
             val encryptionKeyResponse =
-                Requests(baseClient = httpClient, responseParser = parser).get(
-                    encryptionUri,
-                    headers = playlistStream.headers,
-                    verify = false
-                )
+                app.get(encryptionUri, headers = playlistStream.headers, verify = false)
             encryptionData = encryptionKeyResponse.body.bytes()
         } else {
             encryptionState = false
