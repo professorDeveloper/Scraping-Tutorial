@@ -38,7 +38,8 @@ fun main(args: Array<String>) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun generateVrfAES(movieId: String, userId: String): String {
-    val keyData = "he5idgobIQ_$userId".toByteArray(Charsets.UTF_8)
+    val driveKey = base64Decode("aGU1aWRnb2JJUV8=")
+    val keyData = "$driveKey$userId".toByteArray(Charsets.UTF_8)
     val keyBytes = MessageDigest.getInstance("SHA-256").digest(keyData)
     val keySpec = SecretKeySpec(keyBytes, "AES")
     val ivSpec = IvParameterSpec(ByteArray(16))
