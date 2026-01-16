@@ -15,7 +15,8 @@ abstract class Extractor {
             FilemoonExtractor(),
             PrimeSrcExtractor(),
             MixDropExtractor(),
-            VoeExtractor()
+            VoeExtractor(),
+            StreamtapeExtractorAlt(),
         )
 
         suspend fun extract(link: String): Video {
