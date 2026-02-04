@@ -1,58 +1,51 @@
 package com.azamovhudstc.scarpingtutorial.streamflix
 
-import com.azamovhudstc.scarpingtutorial.utils.Utils
-import com.lagradost.cloudstream3.USER_AGENT
+import com.saikou.sozo_tv.converter.JsoupConverterFactory
+import com.saikou.sozo_tv.converter.StringConverterFactory
+import okhttp3.OkHttpClient
+import org.jsoup.nodes.Document
+import retrofit2.Retrofit
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.Url
 import java.net.URI
 
 open class DoodLaExtractor : Extractor() {
 
     override val name = "DoodStream"
     override val mainUrl = "https://dood.la"
-    override val aliasUrls = listOf(
-        "https://dsvplay.com",
-        "https://mikaylaarealike.com",
-        "https://myvidplay.com"
-    )
+    override val aliasUrls =
+        listOf(
+            "https://dsvplay.com",
+            "https://mikaylaarealike.com",
+            "https://myvidplay.com",
+            "https://dood.watch"
+        )
 
     private val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
     override suspend fun extract(link: String): Video {
-        // Embed URL ga o'tkazish
+        val service = Service.build(mainUrl)
+
         val embedUrl = link.replace("/d/", "/e/")
+        val document = service.get(embedUrl, link)
 
-        // Headers ni tayyorlash
-        val headers = mapOf(
-            "User-Agent" to USER_AGENT,
-            "Referer" to link,
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language" to "en-US,en;q=0.5"
-        )
+        val md5 = getBaseUrl(embedUrl) +
+                (Regex("/pass_md5/[^']*").find(document.toString())?.value
+                    ?: throw Exception("Can't find md5"))
 
-        // Birinchi sahifani olish
-        val documentHtml = Utils.get(embedUrl, headers)
+        val url = service.getString(md5, link) +
+                createHashTable() +
+                "?token=${md5.substringAfterLast("/")}"
 
-        // MD5 URL ni topish
-        val md5Regex = Regex("/pass_md5/[^']*")
-        val md5Path = md5Regex.find(documentHtml)?.value
-            ?: throw Exception("Can't find md5")
-
-        val baseUrl = getBaseUrl(embedUrl)
-        val md5Url = baseUrl + md5Path
-
-        // MD5 URL dan javob olish
-        val response = Utils.get(md5Url, headers)
-
-        // Video URL ni yaratish
-        val hashTable = createHashTable()
-        val videoUrl = response.trim() + hashTable + "?token=${md5Path.substringAfterLast("/")}"
-
-        return Video(
-            source = videoUrl,
+        val video = Video(
+            source = url,
             headers = mapOf(
-                "User-Agent" to USER_AGENT,
                 "Referer" to mainUrl
             )
         )
+
+        return video
     }
 
     private fun createHashTable(): String {
@@ -63,22 +56,8 @@ open class DoodLaExtractor : Extractor() {
         }
     }
 
-    private fun getBaseUrl(url: String): String {
-        return try {
-            val uri = URI(url)
-            "${uri.scheme}://${uri.host}"
-        } catch (e: Exception) {
-            // Agar URI parse qilishda muammo bo'lsa, oddiy string usulida
-            if (url.startsWith("http://")) {
-                url.substringBefore("/", "")
-            } else if (url.startsWith("https://")) {
-                val afterProtocol = url.substringAfter("https://")
-                "https://" + afterProtocol.substringBefore("/")
-            } else {
-                "https://" + url.substringBefore("/")
-            }
-        }
-    }
+    private fun getBaseUrl(url: String) = URI(url).let { "${it.scheme}://${it.host}" }
+
 
     class DoodLiExtractor : DoodLaExtractor() {
         override var mainUrl = "https://dood.li"
@@ -86,5 +65,38 @@ open class DoodLaExtractor : Extractor() {
 
     class DoodExtractor : DoodLaExtractor() {
         override val mainUrl = "https://vide0.net"
+    }
+
+
+    private interface Service {
+
+        companion object {
+            fun build(baseUrl: String): Service {
+                val client = OkHttpClient.Builder()
+                    .build()
+
+                val retrofit = Retrofit.Builder()
+                    .baseUrl(baseUrl)
+                    .addConverterFactory(JsoupConverterFactory.create())
+                    .addConverterFactory(StringConverterFactory.create())
+                    .client(client)
+                    .build()
+
+                return retrofit.create(Service::class.java)
+            }
+        }
+
+
+        @GET
+        suspend fun get(
+            @Url url: String,
+            @Header("Referer") referer: String,
+        ): Document
+
+        @GET
+        suspend fun getString(
+            @Url url: String,
+            @Header("Referer") referer: String,
+        ): String
     }
 }

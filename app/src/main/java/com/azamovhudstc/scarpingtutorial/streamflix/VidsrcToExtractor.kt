@@ -12,7 +12,7 @@ import javax.crypto.spec.SecretKeySpec
 class VidsrcToExtractor : Extractor() {
 
     override val name = "Vidsrc.to"
-    override val mainUrl = "https://playimdb.com"
+    override val mainUrl = "https://vidsrc.to"
     private val keyUrl = "https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json"
     private val gson = Gson()
 
@@ -29,7 +29,6 @@ class VidsrcToExtractor : Extractor() {
     }
 
     override suspend fun extract(link: String): Video {
-        // Get initial page to extract mediaId
         val headers = mapOf(
             "User-Agent" to USER_AGENT,
             "Referer" to mainUrl
@@ -37,15 +36,13 @@ class VidsrcToExtractor : Extractor() {
 
         val doc = Utils.getJsoup(link, headers)
         println(link)
+
         val mediaId = doc.selectFirst("ul.episodes li a")
             ?.attr("data-id")
             ?: throw Exception("Can't retrieve media ID")
 
-        // Get encryption keys
         val keysJson = Utils.get(keyUrl)
         val keys = gson.fromJson(keysJson, Keys::class.java)
-
-        // Get sources
         val sourcesUrl = "$mainUrl/ajax/embed/episode/$mediaId/sources"
         val token = encode(keys.encrypt[0], mediaId)
         val sourcesResponse = Utils.get("$sourcesUrl?token=$token", headers)
@@ -60,13 +57,11 @@ class VidsrcToExtractor : Extractor() {
             try {
                 val source = sources[attempts]
 
-                // Get embed source
                 val embedUrl = "$mainUrl/ajax/embed/source/${source.id}"
                 val embedToken = encode(keys.encrypt[0], source.id)
                 val embedResponse = Utils.get("$embedUrl?token=$embedToken", headers)
                 val embedRes = gson.fromJson(embedResponse, EmbedSource::class.java)
 
-                // Decrypt final URL
                 val finalUrl = decryptUrl(keys.decrypt[0], embedRes.result.url)
 
                 if (finalUrl == embedRes.result.url) {

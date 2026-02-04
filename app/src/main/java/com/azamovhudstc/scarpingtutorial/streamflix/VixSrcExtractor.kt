@@ -31,8 +31,9 @@ class VixSrcExtractor : Extractor() {
         )
 
         val html = Utils.get(link, headers)
-
-        val scriptRegex = Regex("<script>([\\s\\S]*?)window\\.video\\s*=\\s*\\{([\\s\\S]*?)\\};([\\s\\S]*?)</script>")
+        println("Extract:"+link)
+        val scriptRegex =
+            Regex("<script>([\\s\\S]*?)window\\.video\\s*=\\s*\\{([\\s\\S]*?)\\};([\\s\\S]*?)</script>")
         val scriptMatch = scriptRegex.find(html)
 
         val scriptText = scriptMatch?.value ?: ""
@@ -105,10 +106,12 @@ class VixSrcExtractor : Extractor() {
 
         val finalUrl = httpUrlBuilder.build().toString()
         println(finalUrl)
-        println(mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-            "Referer" to mainUrl
-        ))
+        println(
+            mapOf(
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+                "Referer" to mainUrl
+            )
+        )
         return Video(
             source = finalUrl,
             headers = mapOf(

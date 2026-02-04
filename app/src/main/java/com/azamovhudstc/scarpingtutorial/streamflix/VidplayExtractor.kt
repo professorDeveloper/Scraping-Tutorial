@@ -16,11 +16,9 @@ open class VidplayExtractor : Extractor() {
     private val gson = Gson()
 
     override suspend fun extract(link: String): Video {
-        // Get encryption keys
         val keysJson = Utils.get(keyUrl)
         val keys = gson.fromJson(keysJson, Keys::class.java)
 
-        // Extract video ID from link
         val cleanLink = link.substringBefore("?")
         val id = if (cleanLink.endsWith("/")) {
             cleanLink.substringBeforeLast("/").substringAfterLast("/")
@@ -28,14 +26,11 @@ open class VidplayExtractor : Extractor() {
             cleanLink.substringAfterLast("/")
         }
 
-        // Encode ID for request
         val encId = encode(keys.encrypt[1], id)
         val h = encode(keys.encrypt[2], id)
         
         val queryParams = if (link.contains("?")) "&${link.substringAfter("?")}" else ""
         val mediaUrl = "${mainUrl}/mediainfo/${encId}?autostart=true${queryParams}&h=${h}"
-
-        // Get sources with referer header
         val headers = mapOf(
             "Accept" to "application/json, text/javascript, */*; q=0.01",
             "X-Requested-With" to "XMLHttpRequest",
