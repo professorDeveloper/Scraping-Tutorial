@@ -1,77 +1,86 @@
 package com.azamovhudstc.scarpingtutorial.streamflix
 
 import com.azamovhudstc.scarpingtutorial.utils.Utils
+import com.saikou.sozo_tv.converter.JsoupConverterFactory
 import okhttp3.Request
+import okhttp3.ResponseBody
+import org.jsoup.nodes.Document
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.http.GET
+import retrofit2.http.Headers
+import retrofit2.http.Streaming
+import retrofit2.http.Url
 
-class StreamtapeExtractorAlt : Extractor() {
+
+class StreamtapeExtractor : Extractor() {
 
     override val name = "Streamtape"
     override val mainUrl = "https://streamtape.com"
     override val aliasUrls = listOf("https://streamta.site")
 
+
     override suspend fun extract(link: String): Video {
-        val linkJustParameter = if (link.startsWith(mainUrl)) {
-            link.replace(mainUrl, "")
-        } else {
-            aliasUrls.firstOrNull { link.startsWith(it) }?.let { link.replace(it, "") } 
-                ?: link.substringAfter("com")
-        }
+        val linkJustParameter = link.replace(mainUrl, "")
 
-        // Headers for initial request
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language" to "en-US,en;q=0.5",
-            "Referer" to mainUrl
-        )
+        val service = StreamtapeExtractorService.build(mainUrl)
+        val source = service.getSource(linkJustParameter)
 
-        // Get initial page
-        val sourceUrl = mainUrl + linkJustParameter
-        val sourceHtml = Utils.get(sourceUrl, headers)
-        
-        // Extract JavaScript parameters
+        // Estrae i parametri dal codice JavaScript
         val scriptRegex = Regex("document\\.getElementById\\('botlink'\\)\\.innerHTML\\s*=\\s*'([^']+)'\\s*\\+\\s*\\('([^']+)'\\)\\.substring\\(([0-9]+)\\)")
-        val scriptMatch = scriptRegex.find(sourceHtml) 
+        val scriptMatch = scriptRegex.find(source.html())
             ?: throw Exception("botlink JavaScript not found")
-        
+
         val baseUrl = scriptMatch.groupValues[1]
         val paramString = scriptMatch.groupValues[2]
-        val substringIndex = scriptMatch.groupValues[3].toInt()
-        
-        // Apply substring
+        val substringIndex = scriptMatch.groupValues[3].toInt() // 4
+
+        // Applica substring per ottenere i parametri corretti
         val cleanParams = paramString.substring(substringIndex)
-        
-        // Extract parameters
+
+        // Estrae id, expires, ip e token dai parametri
         val idRegex = Regex("id=([^&]+)")
         val expiresRegex = Regex("expires=([^&]+)")
         val ipRegex = Regex("ip=([^&]+)")
         val tokenRegex = Regex("token=([^&]+)")
-        
+
         val videoId = idRegex.find(cleanParams)?.groupValues?.get(1) ?: throw Exception("video id not found")
         val expires = expiresRegex.find(cleanParams)?.groupValues?.get(1) ?: throw Exception("expires not found")
         val ip = ipRegex.find(cleanParams)?.groupValues?.get(1) ?: throw Exception("ip not found")
         val token = tokenRegex.find(cleanParams)?.groupValues?.get(1) ?: throw Exception("token not found")
-        
+
         val finalVideoUrl = "$mainUrl/get_video?id=$videoId&expires=$expires&ip=$ip&token=$token&stream=1"
 
-        // Get redirected URL using OkHttpClient directly
-        val request = Request.Builder()
-            .url(finalVideoUrl)
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-            .header("Referer", sourceUrl)
-            .build()
-        
-        val response = Utils.httpClient.newCall(request).execute()
-        val redirectedUrl = response.request.url.toString()
-        response.close()
+        val response = service.getVideo(finalVideoUrl)
+        val sourceUrl = (response.raw() as okhttp3.Response).networkResponse?.request?.url?.toString()
+            ?: throw Exception("Can't retrieve URL")
 
-        return Video(
-            source = redirectedUrl,
-            headers = mapOf(
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "Referer" to mainUrl
-            ),
-            subtitles = emptyList()
+        val video = Video(
+            source = sourceUrl,
+            subtitles = listOf()
         )
+        return video
+    }
+
+    private interface StreamtapeExtractorService {
+        companion object {
+            fun build(baseUrl: String): StreamtapeExtractorService {
+                val retrofit = Retrofit.Builder()
+                    .baseUrl(baseUrl)
+                    .addConverterFactory(JsoupConverterFactory.create())
+                    .build()
+
+                return retrofit.create(StreamtapeExtractorService::class.java)
+            }
+        }
+
+        @GET
+        @Headers("User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+        suspend fun getSource(@Url url: String): Document
+
+        @GET
+        @Streaming
+        @Headers("User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+        suspend fun getVideo(@Url url: String): Response<ResponseBody>
     }
 }

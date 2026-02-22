@@ -18,7 +18,7 @@ abstract class Extractor {
             DoodLaExtractor(),
             VoeExtractor(),
             VidnestExtractor(),
-            StreamtapeExtractorAlt(),
+            YourUploadExtractor(),
             RpmvidExtractor()
         )
 
